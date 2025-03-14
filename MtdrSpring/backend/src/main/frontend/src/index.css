@@ -5,8 +5,7 @@
 ** Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl/
 */
 body {
-  /* from the redwood theme */
-  background-color: #3a3632;
+  background-color: #F5F5F5; /* Fondo gris claro */
   width: 100%;
   max-width: 50rem;
   margin: 0 auto;
@@ -16,132 +15,179 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 .App {
-  background: #201e1c;
-  color: #fef9f2;
+  background: #FFFFFF; /* Fondo blanco */
+  color: #333333; /* Texto gris oscuro */
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: max(12px, min(2vw, 18px)); /*calc(1vw + 1vmin);*/
+  font-size: max(12px, min(2vw, 18px));
   margin: 2rem 0 4rem 0;
   padding: 1rem;
   position: relative;
-  box-shadow: 0 10px 18px 0 rgba(0, 0, 0, 0.2),
-    0 4.5rem 8rem 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 18px 0 rgba(0, 0, 0, 0.1),
+    0 4.5rem 8rem 0 rgba(0, 0, 0, 0.05);
   border-radius: 0.5rem;
 }
+
 div#maincontent,
 div#newinputform form {
   width: 95%;
 }
+
 div#maincontent {
   margin: 0;
   padding: 0;
 }
+
 h1 {
   margin: 0.5rem 0 1rem 0;
   padding: 0;
+  color: #f80000; /* Rojo Oracle para el título principal */
 }
+
 h2 {
   margin: 0.1rem 0 0.1rem 0;
   padding: 0;
+  color: #f80000; /* Rojo Oracle para subtítulos */
 }
+
 #newiteminput {
   width: 100%;
 }
+
 div#newinputform {
   width: 100%;
 }
+
 div#newinputform form {
   display: flex;
   flex-direction: row;
   margin: 0 auto;
 }
+
 #donelist {
   margin: 0;
   padding: 0;
 }
+
 table#itemlistNotDone {
   margin-bottom: 2rem;
 }
+
 table#itemlistDone {
   margin-bottom: 3rem;
 }
+
 table.itemlist {
   margin-top: 0.7rem;
   border-collapse: collapse;
   margin-bottom: 1rem;
   width: 100%;
 }
+
 table.itemlist td,
 table.itemlist th {
-  border-bottom: solid 1px #5b5652;
+  border-bottom: solid 1px #DDDDDD; /* Borde gris claro */
   padding: 0.5rem;
   text-align: left;
 }
+
 table.itemlist td.description {
   width: 100%;
   padding-left: 1rem;
   padding-right: 1rem;
 }
+
 table.itemlist td.date {
   font-size: max(10px, min(1.5vw, 14px));
-  color: grey;
+  color: #666666; /* Texto gris medio */
   white-space: nowrap;
   padding-right: 0;
   padding-left: 0;
 }
+
 table.itemlist tr:hover {
-  background-color: #161513;
+  background-color: #F5F5F5; /* Fondo gris claro al pasar el mouse */
 }
+
 input {
   font-family: inherit;
   font-size: 100%;
   line-height: 1;
   margin: 0;
 }
+
 button,
 input {
   overflow: visible;
 }
+
 input[type="text"] {
   border-radius: 0.3rem;
   padding-left: 10px;
+  border: 1px solid #DDDDDD; /* Borde gris claro */
 }
+
 button.AddButton,
 button.DeleteButton,
 button.AddButton,
 button.DoneButton {
   font-size: max(8px, min(2vw, 12px));
   padding: 0.35em 0.5em;
-  color: #161513;
+  color: #FFFFFF; /* Texto blanco */
 }
-/* from the redwood theme */
+
 button.AddButton {
-  color: #fef9f2;
-  background-color: #5f7d4f;
+  background-color: #f80000; /* Azul Oracle */
 }
+
 button.AddButton:hover {
-  background-color: #6f915d;
+  background-color: #f80000; /* Azul más oscuro al pasar el mouse */
 }
+
 button.DeleteButton {
-  color: #fef9f2;
-  background-color: #d63b25;
+  background-color: #322b2b; /* Rojo para botones de eliminar */
 }
+
 button.DeleteButton:hover {
-  background-color: #ec4f3a;
+  background-color: #322b2b; /* Rojo más oscuro al pasar el mouse */
 }
+
 button.DoneButton {
-  background-color: #fbf9f8;
+  background-color: #322b2b; /* Verde para botones de completar */
 }
+
 button.DoneButton:hover {
-  background-color: #d4cfca;
+  background-color: #322b2b; /* Verde más oscuro al pasar el mouse */
 }
 
 /* Alerts styles */
 .app-tabs {
   margin-bottom: 20px;
   width: 100%;
+}
+
+.app-tabs .Mui-selected {
+  color: #f80000 !important; /* Rojo Oracle para la pestaña seleccionada */
+  border-bottom: 2px solid #f80000; /* Borde inferior rojo */
+}
+
+.app-tabs .MuiTab-root {
+  color: #333333; /* Texto gris oscuro para pestañas no seleccionadas */
+  font-weight: bold;
+}
+
+.app-tabs .MuiTabs-indicator {
+  background-color: #f80000; /* Color del indicador de la pestaña activa */
+}
+
+/* Estilos para el botón "Create Alert" */
+.create-alert-button {
+  background-color: #f80000; /* Rojo Oracle */
+  color: #FFFFFF; /* Texto blanco */
+  font-weight: bold;
 }
 
 .alerts-container {
@@ -155,25 +201,31 @@ button.DoneButton:hover {
   margin-bottom: 20px;
 }
 
+.alerts-header h2 {
+  color: #f80000; /* Rojo Oracle para el título de la sección de alertas */
+}
+
+/* Estilos para el botón "Create Alert" */
 .create-alert-button {
-  background-color: #5f7d4f;
-  color: #fef9f2;
+  background-color: #f80000 !important; /* Rojo Oracle */
+  color: #FFFFFF !important; /* Texto blanco */
+  font-weight: bold;
 }
 
 .create-alert-button:hover {
-  background-color: #6f915d;
+  background-color: #cc0000 !important; /* Rojo más oscuro al pasar el mouse */
 }
 
 .alert-dialog-content {
   padding: 20px;
-  background-color: #201e1c;
-  color: #fef9f2;
+  background-color: #FFFFFF; /* Fondo blanco */
+  color: #333333; /* Texto gris oscuro */
 }
 
 .alert-form {
   min-width: 400px;
 }
-
+/*#0056b3*/
 .form-buttons {
   margin-top: 20px;
   display: flex;
@@ -185,7 +237,7 @@ button.DoneButton:hover {
 }
 
 .error-message {
-  color: #d63b25;
+  color: #FF0000; /* Rojo para mensajes de error */
 }
 
 .priority {
@@ -194,13 +246,13 @@ button.DoneButton:hover {
 }
 
 .priority.alta {
-  color: #d63b25;
+  color: #FF0000; /* Rojo para prioridad alta */
 }
 
 .priority.media {
-  color: #f5b700;
+  color: #FFC107; /* Amarillo para prioridad media */
 }
 
 .priority.baja {
-  color: #5f7d4f;
+  color: #28A745; /* Verde para prioridad baja */
 }

@@ -149,13 +149,13 @@ function AlertForm(props) {
         />
 
         <div className="form-buttons">
-          <Button variant="contained" color="primary" type="submit">
+          <Button variant="contained" color="primary" type="submit" className="create-alert-button">
             Crear Alerta
           </Button>
           <Button
             variant="outlined"
             onClick={props.onClose}
-            style={{ marginLeft: "10px" }}
+            style={{ marginLeft: "10px", color: "#322b2b", border: "solid 1px #322b2b"}}
           >
             Cancelar
           </Button>
