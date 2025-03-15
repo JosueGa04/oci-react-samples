@@ -23,44 +23,44 @@ function Alerts() {
 
   function loadAlerts() {
     setLoading(true);
-    fetch("http://localhost:8081/alerts")
+    setError(null);
+    
+    // Usamos la ruta de la API tal como estaba en el código original
+    fetch("/alerts")
       .then((response) => {
-        if (response.ok) {
-          return response.json();
-        } else {
-          throw new Error("Failed to fetch alerts");
+        if (!response.ok) {
+          throw new Error(`Error en la respuesta: ${response.status} ${response.statusText}`);
         }
+        return response.json();
       })
-      .then(
-        (result) => {
-          setLoading(false);
-          setAlerts(result);
-        },
-        (error) => {
-          setLoading(false);
-          setError(error);
-        }
-      );
+      .then((result) => {
+        setLoading(false);
+        setAlerts(result);
+      })
+      .catch((error) => {
+        setLoading(false);
+        setError(error);
+        console.error("Error cargando alertas:", error);
+      });
   }
 
   function deleteAlert(alertId) {
-    fetch(`http://localhost:8081/alerts/${alertId}`, {
+    fetch(`/alerts/${alertId}`, {
       method: "DELETE",
     })
       .then((response) => {
-        if (response.ok) {
-          const remainingAlerts = alerts.filter(
-            (alert) => alert.id !== alertId
-          );
-          setAlerts(remainingAlerts);
-          return response;
-        } else {
-          throw new Error("Failed to delete alert");
+        if (!response.ok) {
+          throw new Error(`Error en la respuesta: ${response.status} ${response.statusText}`);
         }
+        const remainingAlerts = alerts.filter(
+          (alert) => alert.id !== alertId
+        );
+        setAlerts(remainingAlerts);
+        return response;
       })
       .catch((error) => {
         setError(error);
-        console.error("Error deleting alert:", error);
+        console.error("Error eliminando alerta:", error);
       });
   }
 
@@ -76,37 +76,57 @@ function Alerts() {
     setIsFormOpen(false);
   }
 
+  function retryLoadAlerts() {
+    loadAlerts();
+  }
+
   return (
     <div className="alerts-container">
       <div className="alerts-header">
-        <h2>Alerts</h2>
+        <h2>Alertas</h2>
         <Button
           variant="contained"
           startIcon={<NotificationsIcon />}
           onClick={openForm}
           className="create-alert-button"
         >
-          Create Alert
+          Crear Alerta
         </Button>
       </div>
 
-      {error && <p className="error-message">Error: {error.message}</p>}
+      {error && (
+        <div className="error-container" style={{ color: "red", marginBottom: "15px" }}>
+          <p className="error-message">Error: {error.message}</p>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={retryLoadAlerts}
+            size="small"
+            style={{ marginTop: "10px" }}
+          >
+            Reintentar
+          </Button>
+        </div>
+      )}
 
       {isLoading ? (
-        <CircularProgress />
+        <div style={{ textAlign: "center", padding: "20px" }}>
+          <CircularProgress />
+          <p>Cargando alertas...</p>
+        </div>
       ) : (
         <div className="alerts-list">
           {alerts.length === 0 ? (
-            <p>No alerts found</p>
+            <p>No se encontraron alertas</p>
           ) : (
             <table className="itemlist">
               <thead>
                 <tr>
-                  <th>Message</th>
-                  <th>Task</th>
-                  <th>Priority</th>
-                  <th>Scheduled Time</th>
-                  <th>Actions</th>
+                  <th>Mensaje</th>
+                  <th>Tarea</th>
+                  <th>Prioridad</th>
+                  <th>Hora Programada</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>

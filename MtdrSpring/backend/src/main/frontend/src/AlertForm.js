@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "@mui/material/Button";
 import {
   TextField,
@@ -6,7 +6,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
+import API_LIST from "./API"; // Importamos la misma constante que usa App.js
 
 function AlertForm(props) {
   const [alertData, setAlertData] = useState({
@@ -19,6 +21,41 @@ function AlertForm(props) {
     scheduledTime: new Date().toISOString().slice(0, 16),
   });
 
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Cargar las tareas existentes cuando el componente se monta
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  // Función para cargar las tareas pendientes
+  function loadTasks() {
+    setIsLoading(true);
+    setError(null);
+    
+    // Usamos API_LIST, la misma constante que se usa en App.js
+    fetch(API_LIST)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Error en la respuesta: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((result) => {
+        setIsLoading(false);
+        // Filtrar solo las tareas no completadas
+        const pendingTasks = result.filter(task => !task.done);
+        setTasks(pendingTasks);
+      })
+      .catch((error) => {
+        console.error("Error cargando tareas:", error);
+        setIsLoading(false);
+        setError(error);
+      });
+  }
+
   function handleChange(e) {
     const { name, value } = e.target;
     setAlertData((prevData) => ({
@@ -27,10 +64,51 @@ function AlertForm(props) {
     }));
   }
 
+  function handleTaskSelection(e) {
+    const taskId = e.target.value;
+    
+    // Si no se seleccionó ninguna tarea, limpiar los campos relacionados
+    if (!taskId) {
+      setAlertData((prevData) => ({
+        ...prevData,
+        taskId: "",
+        task: "",
+        projectId: "",
+        userId: "",
+      }));
+      return;
+    }
+
+    // Buscar la tarea seleccionada
+    const selectedTask = tasks.find(task => task.id === taskId);
+    
+    if (selectedTask) {
+      // Autocompletar los campos con los datos de la tarea seleccionada
+      setAlertData((prevData) => ({
+        ...prevData,
+        taskId: selectedTask.id,
+        task: selectedTask.description,
+        // projectId: selectedTask.projectId || "",
+        // userId: selectedTask.userId || "",
+      }));
+    }
+  }
+
+  // Función para intentar cargar las tareas nuevamente
+  function retryLoadTasks() {
+    loadTasks();
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
-    if (!alertData.message.trim() || !alertData.task.trim()) {
-      alert("El mensaje y la tarea son obligatorios.");
+    if (!alertData.message.trim()) {
+      alert("El mensaje de alerta es obligatorio.");
+      return;
+    }
+
+    // Si no hay una tarea seleccionada pero el usuario ha escrito manualmente los campos
+    if (!alertData.taskId && !alertData.task.trim()) {
+      alert("Por favor, seleccione una tarea o complete los campos de tarea manualmente.");
       return;
     }
 
@@ -40,13 +118,18 @@ function AlertForm(props) {
       scheduledTime: new Date(alertData.scheduledTime).toISOString(),
     };
 
-    // **Solo guardar la alerta en la BD, el backend se encarga de enviarla a Telegram**
+    // Guardar la alerta en la BD - usamos la ruta "/alerts" como en el código original
     fetch("/alerts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(adjustedAlertData),
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Error en la respuesta: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then((savedAlert) => {
         console.log("Alerta guardada en la base de datos:", savedAlert);
         props.onAlertCreated(savedAlert);
@@ -75,25 +158,64 @@ function AlertForm(props) {
     <div className="alert-form">
       <h2>Crear Nueva Alerta</h2>
       <form onSubmit={handleSubmit}>
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <CircularProgress size={24} />
+            <p>Cargando tareas...</p>
+          </div>
+        ) : error ? (
+          <div className="error-container" style={{ color: "red", marginBottom: "15px" }}>
+            <p className="error-message">Error: {error.message}</p>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={retryLoadTasks}
+              size="small"
+              style={{ marginTop: "10px" }}
+            >
+              Reintentar
+            </Button>
+          </div>
+        ) : (
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Seleccionar Tarea</InputLabel>
+            <Select
+              name="selectedTask"
+              value={alertData.taskId}
+              onChange={handleTaskSelection}
+            >
+              <MenuItem value="">-- Seleccionar una tarea --</MenuItem>
+              {tasks.map((task) => (
+                <MenuItem key={task.id} value={task.id}>
+                  {task.description}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
         <TextField
           fullWidth
           margin="normal"
-          label="Mensaje"
+          label="Mensaje de Alerta"
           name="message"
           value={alertData.message}
           onChange={handleChange}
           required
+          placeholder="Motivo de la alerta..."
         />
+
+        {/* Permitimos editar manualmente si hay un error al cargar las tareas */}
         <TextField
           fullWidth
           margin="normal"
           label="Task ID"
           name="taskId"
-          type="number"
           value={alertData.taskId}
           onChange={handleChange}
-          required
+          disabled={!error}
         />
+        
         <TextField
           fullWidth
           margin="normal"
@@ -101,18 +223,20 @@ function AlertForm(props) {
           name="task"
           value={alertData.task}
           onChange={handleChange}
-          required
+          disabled={!error}
+          required={error}
         />
+        
         <TextField
           fullWidth
           margin="normal"
           label="Project ID"
           name="projectId"
-          type="number"
           value={alertData.projectId}
           onChange={handleChange}
-          required
+          //disabled={!error}
         />
+        
         <TextField
           fullWidth
           margin="normal"
@@ -120,7 +244,7 @@ function AlertForm(props) {
           name="userId"
           value={alertData.userId}
           onChange={handleChange}
-          required
+          //disabled={!error}
         />
 
         <FormControl fullWidth margin="normal">
