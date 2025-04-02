@@ -135,6 +135,52 @@ function AlertForm(props) {
       });
   }
 
+
+  function handleSendNow(e) {
+    e.preventDefault();
+    if (!alertData.message.trim()) {
+      alert("El mensaje de alerta es obligatorio.");
+      return;
+    }
+
+    if (!alertData.taskId && !alertData.task.trim()) {
+      alert(
+        "Por favor, seleccione una tarea o complete los campos de tarea manualmente."
+      );
+      return;
+    }
+
+    const immediateAlertData = {
+      ...alertData,
+      scheduledTime: new Date().toISOString(),
+    };
+
+    fetch("/alerts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(immediateAlertData),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Error en la respuesta: ${response.status} ${response.statusText}`
+          );
+        }
+        return response.json();
+      })
+      .then((savedAlert) => {
+        console.log("Alerta enviada inmediatamente:", savedAlert);
+        props.onAlertCreated(savedAlert);
+        props.onClose();
+      })
+      .catch((error) => {
+        console.error("Error al enviar la alerta:", error);
+        alert("Error al enviar la alerta: " + error.message);
+      });
+  }
+
+
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
       {isLoading ? (
@@ -252,6 +298,28 @@ function AlertForm(props) {
           />
         </Grid>
       </Grid>
+
+
+      <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSendNow}
+          sx={{ minWidth: '120px' }}
+        >
+          Enviar Ahora
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          type="submit"
+          sx={{ minWidth: '120px' }}
+        >
+          Programar
+        </Button>
+      </Box>
+
+
     </Box>
   );
 }
