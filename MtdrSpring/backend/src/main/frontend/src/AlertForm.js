@@ -135,6 +135,7 @@ function AlertForm(props) {
       });
   }
 
+
   function handleSendNow(e) {
     e.preventDefault();
     if (!alertData.message.trim()) {
@@ -177,6 +178,8 @@ function AlertForm(props) {
         alert("Error al enviar la alerta: " + error.message);
       });
   }
+
+
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
@@ -296,6 +299,7 @@ function AlertForm(props) {
         </Grid>
       </Grid>
 
+
       <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
         <Button
           variant="contained"
@@ -314,6 +318,8 @@ function AlertForm(props) {
           Programar
         </Button>
       </Box>
+
+
     </Box>
   );
 }
