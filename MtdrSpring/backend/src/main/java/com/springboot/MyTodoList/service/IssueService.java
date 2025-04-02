@@ -42,6 +42,7 @@ public class IssueService {
         issue.setAssignee(issueDetails.getAssignee());
         issue.setIdSprint(issueDetails.getIdSprint());
         issue.setTeam(issueDetails.getTeam());
+        issue.setStatus(issueDetails.getStatus());
 
         return issueRepository.save(issue);
     }

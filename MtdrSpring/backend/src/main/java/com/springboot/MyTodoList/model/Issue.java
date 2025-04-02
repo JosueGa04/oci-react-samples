@@ -35,6 +35,9 @@ public class Issue {
     @Column(name = "TEAM", length = 100)
     private String team;
 
+    @Column(name = "STATUS")
+    private Integer status;
+
     // Getters and Setters
     public Long getIssueId() {
         return issueId;
@@ -106,5 +109,13 @@ public class Issue {
 
     public void setTeam(String team) {
         this.team = team;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 } 
