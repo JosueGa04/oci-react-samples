@@ -22,6 +22,7 @@ import {
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import Sprints from "./Sprints";
+import Alerts from "./Alerts";
 
 const drawerWidth = 240;
 
@@ -68,6 +69,8 @@ const Dashboard = ({ children }) => {
     switch (currentView) {
       case "sprints":
         return <Sprints />;
+      case "alerts":
+        return <Alerts />;
       case "dashboard":
         return children;
       default:

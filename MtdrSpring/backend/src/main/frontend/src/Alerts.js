@@ -3,12 +3,29 @@
  */
 
 import React, { useState, useEffect } from "react";
-import Button from "@mui/material/Button";
+import {
+  Box,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
+import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
 import AlertForm from "./AlertForm";
-import { CircularProgress, Dialog, IconButton } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import Moment from "react-moment";
+
+const API_URL = "/alerts";
 
 function Alerts() {
   const [alerts, setAlerts] = useState([]);
@@ -16,7 +33,6 @@ function Alerts() {
   const [error, setError] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  // Fetch alerts when component mounts
   useEffect(() => {
     loadAlerts();
   }, []);
@@ -24,12 +40,13 @@ function Alerts() {
   function loadAlerts() {
     setLoading(true);
     setError(null);
-    
-    // Usamos la ruta de la API tal como estaba en el código original
-    fetch("/alerts")
+
+    fetch(API_URL)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`Error en la respuesta: ${response.status} ${response.statusText}`);
+          throw new Error(
+            `Error en la respuesta: ${response.status} ${response.statusText}`
+          );
         }
         return response.json();
       })
@@ -45,23 +62,27 @@ function Alerts() {
   }
 
   function deleteAlert(alertId) {
-    fetch(`/alerts/${alertId}`, {
-      method: "DELETE",
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Error en la respuesta: ${response.status} ${response.statusText}`);
-        }
-        const remainingAlerts = alerts.filter(
-          (alert) => alert.id !== alertId
-        );
-        setAlerts(remainingAlerts);
-        return response;
+    if (window.confirm("¿Estás seguro de que deseas eliminar esta alerta?")) {
+      fetch(`${API_URL}/${alertId}`, {
+        method: "DELETE",
       })
-      .catch((error) => {
-        setError(error);
-        console.error("Error eliminando alerta:", error);
-      });
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(
+              `Error en la respuesta: ${response.status} ${response.statusText}`
+            );
+          }
+          const remainingAlerts = alerts.filter(
+            (alert) => alert.id !== alertId
+          );
+          setAlerts(remainingAlerts);
+          return response;
+        })
+        .catch((error) => {
+          setError(error);
+          console.error("Error eliminando alerta:", error);
+        });
+    }
   }
 
   function handleAlertCreated(newAlert) {
@@ -81,68 +102,79 @@ function Alerts() {
   }
 
   return (
-    <div className="alerts-container">
-      <div className="alerts-header">
-        <h2>Alertas</h2>
-        <Button
-          variant="contained"
-          startIcon={<NotificationsIcon />}
-          onClick={openForm}
-          className="create-alert-button"
-        >
-          Crear Alerta
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+        <Typography variant="h4">Gestión de Alertas</Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={openForm}>
+          Nueva Alerta
         </Button>
-      </div>
+      </Box>
 
       {error && (
-        <div className="error-container" style={{ color: "red", marginBottom: "15px" }}>
-          <p className="error-message">Error: {error.message}</p>
+        <Box sx={{ color: "red", mb: 2 }}>
+          <Typography>Error: {error.message}</Typography>
           <Button
             variant="contained"
             color="primary"
             onClick={retryLoadAlerts}
             size="small"
-            style={{ marginTop: "10px" }}
+            sx={{ mt: 1 }}
           >
             Reintentar
           </Button>
-        </div>
+        </Box>
       )}
 
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: "20px" }}>
+        <Box sx={{ textAlign: "center", p: 3 }}>
           <CircularProgress />
-          <p>Cargando alertas...</p>
-        </div>
+          <Typography>Cargando alertas...</Typography>
+        </Box>
       ) : (
-        <div className="alerts-list">
-          {alerts.length === 0 ? (
-            <p>No se encontraron alertas</p>
-          ) : (
-            <table className="itemlist">
-              <thead>
-                <tr>
-                  <th>Mensaje</th>
-                  <th>Tarea</th>
-                  <th>Prioridad</th>
-                  <th>Hora Programada</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {alerts.map((alert) => (
-                  <tr key={alert.id}>
-                    <td className="description">{alert.message}</td>
-                    <td>{alert.task}</td>
-                    <td className={`priority ${alert.priority}`}>
-                      {alert.priority}
-                    </td>
-                    <td className="date">
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Mensaje</TableCell>
+                <TableCell>Tarea</TableCell>
+                <TableCell>Prioridad</TableCell>
+                <TableCell>Hora Programada</TableCell>
+                <TableCell>Acciones</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {alerts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    No se encontraron alertas
+                  </TableCell>
+                </TableRow>
+              ) : (
+                alerts.map((alert) => (
+                  <TableRow key={alert.id}>
+                    <TableCell>{alert.message}</TableCell>
+                    <TableCell>{alert.task}</TableCell>
+                    <TableCell>
+                      <Typography
+                        sx={{
+                          color:
+                            alert.priority === "ALTA"
+                              ? "error.main"
+                              : alert.priority === "MEDIA"
+                              ? "warning.main"
+                              : "success.main",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {alert.priority}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
                       <Moment format="MMM Do hh:mm:ss">
                         {alert.scheduledTime}
                       </Moment>
-                    </td>
-                    <td>
+                    </TableCell>
+                    <TableCell>
                       <IconButton
                         aria-label="delete"
                         onClick={() => deleteAlert(alert.id)}
@@ -150,21 +182,22 @@ function Alerts() {
                       >
                         <DeleteIcon />
                       </IconButton>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      <Dialog open={isFormOpen} onClose={closeForm}>
-        <div className="alert-dialog-content">
+      <Dialog open={isFormOpen} onClose={closeForm} maxWidth="md" fullWidth>
+        <DialogTitle>Crear Nueva Alerta</DialogTitle>
+        <DialogContent>
           <AlertForm onClose={closeForm} onAlertCreated={handleAlertCreated} />
-        </div>
+        </DialogContent>
       </Dialog>
-    </div>
+    </Box>
   );
 }
 
