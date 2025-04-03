@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Date;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,11 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import com.springboot.MyTodoList.model.ToDoItem;
+import com.springboot.MyTodoList.model.Issue;
+import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.service.ToDoItemService;
+import com.springboot.MyTodoList.service.IssueService;
+import com.springboot.MyTodoList.service.UserService;
 import com.springboot.MyTodoList.util.BotCommands;
 import com.springboot.MyTodoList.util.BotHelper;
 import com.springboot.MyTodoList.util.BotLabels;
@@ -31,13 +36,20 @@ public class ToDoItemBotController extends TelegramLongPollingBot {
 
 	private static final Logger logger = LoggerFactory.getLogger(ToDoItemBotController.class);
 	private ToDoItemService toDoItemService;
+	private IssueService issueService;
+	private UserService userService;
 	private String botName;
 
-	public ToDoItemBotController(String botToken, String botName, ToDoItemService toDoItemService) {
+	public ToDoItemBotController(String botToken, String botName, 
+			ToDoItemService toDoItemService, 
+			IssueService issueService,
+			UserService userService) {
 		super(botToken);
 		logger.info("Bot Token: " + botToken);
 		logger.info("Bot name: " + botName);
 		this.toDoItemService = toDoItemService;
+		this.issueService = issueService;
+		this.userService = userService;
 		this.botName = botName;
 	}
 
@@ -70,6 +82,12 @@ public class ToDoItemBotController extends TelegramLongPollingBot {
 				row = new KeyboardRow();
 				row.add(BotLabels.SHOW_MAIN_SCREEN.getLabel());
 				row.add(BotLabels.HIDE_MAIN_SCREEN.getLabel());
+				keyboard.add(row);
+
+				// Add new keyboard row for issue commands
+				row = new KeyboardRow();
+				row.add(BotLabels.MY_ASSIGNED_ISSUES.getLabel());
+				row.add(BotLabels.COMPLETE_ISSUE.getLabel());
 				keyboard.add(row);
 
 				// Set the keyboard
@@ -216,6 +234,89 @@ public class ToDoItemBotController extends TelegramLongPollingBot {
 					logger.error(e.getLocalizedMessage(), e);
 				}
 
+			} else if (messageTextFromTelegram.equals(BotLabels.MY_ASSIGNED_ISSUES.getLabel())) {
+				try {
+					// Get user's Telegram ID
+					Long telegramId = update.getMessage().getFrom().getId();
+					// Find user by Telegram ID
+					User user = userService.findByTelegramId(telegramId);
+					
+					if (user != null) {
+						List<Issue> assignedIssues = issueService.getIssuesByAssignee(user.getUserId());
+						
+						ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+						List<KeyboardRow> keyboard = new ArrayList<>();
+
+						// Add header row
+						KeyboardRow headerRow = new KeyboardRow();
+						headerRow.add("My Assigned Issues");
+						keyboard.add(headerRow);
+
+						// Add issues
+						for (Issue issue : assignedIssues) {
+							KeyboardRow issueRow = new KeyboardRow();
+							String status = issue.getStatus() == 1 ? "✅" : "⏳";
+							issueRow.add(String.format("%s #%d - %s", 
+								status, 
+								issue.getIssueId(), 
+								issue.getIssueTitle()));
+							keyboard.add(issueRow);
+						}
+
+						// Add back button
+						KeyboardRow backRow = new KeyboardRow();
+						backRow.add(BotLabels.SHOW_MAIN_SCREEN.getLabel());
+						keyboard.add(backRow);
+
+						keyboardMarkup.setKeyboard(keyboard);
+
+						SendMessage messageToTelegram = new SendMessage();
+						messageToTelegram.setChatId(chatId);
+						messageToTelegram.setText("Your assigned issues:");
+						messageToTelegram.setReplyMarkup(keyboardMarkup);
+
+						execute(messageToTelegram);
+					} else {
+						BotHelper.sendMessageToTelegram(chatId, "User not found. Please register first.", this);
+					}
+				} catch (Exception e) {
+					logger.error(e.getLocalizedMessage(), e);
+					BotHelper.sendMessageToTelegram(chatId, "Error fetching your issues.", this);
+				}
+			} else if (messageTextFromTelegram.startsWith(BotLabels.COMPLETE_ISSUE.getLabel())) {
+				try {
+					// Expected format: /complete <issueId> <hoursWorked> <notes>
+					String[] parts = messageTextFromTelegram.split(" ", 4);
+					if (parts.length >= 4) {
+						Long issueId = Long.parseLong(parts[1]);
+						Integer hoursWorked = Integer.parseInt(parts[2]);
+						String notes = parts[3];
+
+						Issue issue = issueService.getIssueById(issueId)
+							.orElseThrow(() -> new Exception("Issue not found"));
+
+						// Update issue status and add completion details
+						issue.setStatus(1); // Set as completed
+						issue.setHoursWorked(hoursWorked);
+						issue.setCompletionNotes(notes);
+
+						Issue updatedIssue = issueService.updateIssue(issueId, issue);
+
+						// Send confirmation message
+						String confirmationMessage = String.format(
+							"Issue #%d marked as completed!\nHours worked: %d\nNotes: %s",
+							issueId, hoursWorked, notes
+						);
+						BotHelper.sendMessageToTelegram(chatId, confirmationMessage, this);
+					} else {
+						BotHelper.sendMessageToTelegram(chatId, 
+							"Please use the format: /complete <issueId> <hoursWorked> <notes>", 
+							this);
+					}
+				} catch (Exception e) {
+					logger.error(e.getLocalizedMessage(), e);
+					BotHelper.sendMessageToTelegram(chatId, "Error completing the issue.", this);
+				}
 			}
 
 			else {

@@ -220,7 +220,7 @@ function AlertForm(props) {
   function retryLoadUsers() {
     loadUsers();
   }
-
+  
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
       {isLoading ? (
@@ -371,12 +371,13 @@ function AlertForm(props) {
         </Grid>
       </Grid>
 
-      <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
+
+      <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "flex-end" }}>
         <Button
           variant="contained"
           color="primary"
           onClick={handleSendNow}
-          sx={{ minWidth: '120px' }}
+          sx={{ minWidth: "120px" }}
         >
           Enviar Ahora
         </Button>
@@ -384,7 +385,7 @@ function AlertForm(props) {
           variant="contained"
           color="primary"
           type="submit"
-          sx={{ minWidth: '120px' }}
+          sx={{ minWidth: "120px" }}
         >
           Programar
         </Button>
