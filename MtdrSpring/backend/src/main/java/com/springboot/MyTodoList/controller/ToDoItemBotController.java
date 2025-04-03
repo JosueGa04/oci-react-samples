@@ -299,7 +299,6 @@ public class ToDoItemBotController extends TelegramLongPollingBot {
 						issue.setStatus(1); // Set as completed
 						issue.setHoursWorked(hoursWorked);
 						issue.setCompletionNotes(notes);
-						issue.setCompletionDate(new Date());
 
 						Issue updatedIssue = issueService.updateIssue(issueId, issue);
 

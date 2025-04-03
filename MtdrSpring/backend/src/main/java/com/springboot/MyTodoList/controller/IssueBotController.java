@@ -84,7 +84,7 @@ public class IssueBotController extends TelegramLongPollingBot {
     }
 
     private void startCommandReceived(long chatId) throws TelegramApiException {
-        String answer = "Welcome to the Issue Management Bot!\n\n" +
+        String answer = "Welcome to the TaskMaster!\n\n" +
                 "Available commands:\n" +
                 BotLabels.MY_ASSIGNED_ISSUES.getLabel() + " - View your assigned issues\n" +
                 BotLabels.COMPLETE_ISSUE.getLabel() + " - Complete an issue\n" +
@@ -101,13 +101,18 @@ public class IssueBotController extends TelegramLongPollingBot {
         }
 
         List<Issue> assignedIssues = issueService.getIssuesByAssignee(user.getUserId());
-        if (assignedIssues.isEmpty()) {
-            sendMessage(chatId, "You don't have any assigned issues.");
+        // Filter out completed issues (status = 1)
+        List<Issue> activeIssues = assignedIssues.stream()
+                .filter(issue -> issue.getStatus() != 1)
+                .collect(Collectors.toList());
+
+        if (activeIssues.isEmpty()) {
+            sendMessage(chatId, "You don't have any active assigned issues.");
             return;
         }
 
-        StringBuilder message = new StringBuilder("Your assigned issues:\n\n");
-        for (Issue issue : assignedIssues) {
+        StringBuilder message = new StringBuilder("Your active assigned issues:\n\n");
+        for (Issue issue : activeIssues) {
             message.append("ID: ").append(issue.getIssueId())
                     .append("\nTitle: ").append(issue.getIssueTitle())
                     .append("\nStatus: ").append(issue.getStatus())
@@ -128,18 +133,27 @@ public class IssueBotController extends TelegramLongPollingBot {
     }
 
     private void handleIssueCompletion(long chatId, long telegramId, String messageText) throws TelegramApiException {
-        String[] parts = messageText.split(" ");
-        if (parts.length != 4) {
-            sendMessage(chatId, "Invalid format. Use: /complete <issue_id> <hours>");
+        logger.info("Received completion command: " + messageText);
+        
+        // Remove the /complete prefix and trim
+        String command = messageText.substring("/complete ".length()).trim();
+        String[] parts = command.split("\\s+");
+        
+        if (parts.length != 2) {
+            logger.error("Invalid command format. Expected 2 parts, got: " + parts.length);
+            sendMessage(chatId, "Invalid format. Use: /complete <issue_id> <hours>\nExample: /complete 123 4");
             return;
         }
 
         try {
-            Long issueId = Long.parseLong(parts[2]);
-            Integer hoursWorked = Integer.parseInt(parts[3]);
+            Long issueId = Long.parseLong(parts[0]);
+            Integer hoursWorked = Integer.parseInt(parts[1]);
+
+            logger.info("Parsed issueId: " + issueId + ", hoursWorked: " + hoursWorked);
 
             User user = userService.findByTelegramId(telegramId);
             if (user == null) {
+                logger.error("User not found for telegramId: " + telegramId);
                 sendMessage(chatId, "User not found. Please contact your administrator.");
                 return;
             }
@@ -147,19 +161,26 @@ public class IssueBotController extends TelegramLongPollingBot {
             Issue issue = issueService.getIssueById(issueId)
                     .orElseThrow(() -> new Exception("Issue not found"));
 
+            logger.info("Found issue: " + issue.getIssueId() + ", assigned to: " + issue.getAssignee());
+            logger.info("Current user ID: " + user.getUserId());
+
             if (!issue.getAssignee().equals(user.getUserId())) {
+                logger.error("User " + user.getUserId() + " is not assigned to issue " + issueId);
                 sendMessage(chatId, "You are not assigned to this issue.");
                 return;
             }
 
-            issue.setStatus(3); // Assuming 3 is the status code for completed
+            issue.setStatus(1); // Status 1 means COMPLETED
             issue.setHoursWorked(hoursWorked);
             
             issueService.updateIssue(issueId, issue);
+            logger.info("Successfully completed issue " + issueId);
             sendMessage(chatId, "Issue completed successfully!");
         } catch (NumberFormatException e) {
-            sendMessage(chatId, "Invalid issue ID or hours format. Please use numbers.");
+            logger.error("Invalid number format in command: " + command, e);
+            sendMessage(chatId, "Invalid issue ID or hours format. Please use numbers.\nExample: /complete 123 4");
         } catch (Exception e) {
+            logger.error("Error completing issue: " + e.getMessage(), e);
             sendMessage(chatId, "Error completing issue: " + e.getMessage());
         }
     }
