@@ -357,14 +357,21 @@ const Tasks = () => {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Estimation"
-                  name="estimation"
-                  type="number"
-                  value={formData.estimation}
-                  onChange={handleChange}
-                />
+                <FormControl fullWidth>
+                  <InputLabel>Estimation</InputLabel>
+                  <Select
+                    name="estimation"
+                    value={formData.estimation}
+                    onChange={handleChange}
+                    label="Estimation"
+                    required
+                  >
+                    <MenuItem value={1}>1</MenuItem>
+                    <MenuItem value={2}>2</MenuItem>
+                    <MenuItem value={3}>3</MenuItem>
+                    <MenuItem value={4}>4</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
@@ -409,7 +416,7 @@ const Tasks = () => {
                     </MenuItem>
                     {sprints.map((sprint) => (
                       <MenuItem key={sprint.idSprint} value={sprint.idSprint}>
-                        {`Sprint ${sprint.idSprint} - ${sprint.sprintGoal}`}
+                        {sprint.sprintID || `Sprint ${sprint.sprintGoal}`}
                       </MenuItem>
                     ))}
                   </Select>
