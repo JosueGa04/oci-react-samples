@@ -14,9 +14,9 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // Create a new user
-    public User createUser(User user) {
-        return userRepository.save(user);
+    // Get user by Telegram ID
+    public User findByTelegramId(Long telegramId) {
+        return userRepository.findByTelegramId(telegramId);
     }
 
     // Get all users
@@ -24,9 +24,14 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    // Get a user by ID
+    // Get user by ID
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
+    }
+
+    // Create a new user
+    public User createUser(User user) {
+        return userRepository.save(user);
     }
 
     // Update an existing user
@@ -34,9 +39,9 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new Exception("User not found"));
 
-        user.setTelegramId(userDetails.getTelegramId());
         user.setUserName(userDetails.getUserName());
         user.setUserRol(userDetails.getUserRol());
+        user.setTelegramId(userDetails.getTelegramId());
 
         return userRepository.save(user);
     }

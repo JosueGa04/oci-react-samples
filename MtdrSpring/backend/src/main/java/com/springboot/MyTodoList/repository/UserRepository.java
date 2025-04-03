@@ -7,5 +7,5 @@ import com.springboot.MyTodoList.model.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    // Custom query methods can be added here if needed
+    User findByTelegramId(Long telegramId);
 } 

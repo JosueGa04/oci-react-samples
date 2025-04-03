@@ -38,6 +38,12 @@ public class Issue {
     @Column(name = "STATUS")
     private Integer status;
 
+    @Column(name = "HOURS_WORKED")
+    private Integer hoursWorked;
+
+    @Column(name = "COMPLETION_NOTES", length = 4000)
+    private String completionNotes;
+
     // Getters and Setters
     public Long getIssueId() {
         return issueId;
@@ -118,4 +124,21 @@ public class Issue {
     public void setStatus(Integer status) {
         this.status = status;
     }
+
+    public Integer getHoursWorked() {
+        return hoursWorked;
+    }
+
+    public void setHoursWorked(Integer hoursWorked) {
+        this.hoursWorked = hoursWorked;
+    }
+
+    public String getCompletionNotes() {
+        return completionNotes;
+    }
+
+    public void setCompletionNotes(String completionNotes) {
+        this.completionNotes = completionNotes;
+    }
+
 } 
