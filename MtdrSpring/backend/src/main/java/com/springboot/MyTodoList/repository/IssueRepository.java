@@ -4,7 +4,9 @@ import com.springboot.MyTodoList.model.Issue;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface IssueRepository extends JpaRepository<Issue, Long> {
-    // Additional query methods can be defined here if needed
+    List<Issue> findByAssignee(Long assigneeId);
 } 

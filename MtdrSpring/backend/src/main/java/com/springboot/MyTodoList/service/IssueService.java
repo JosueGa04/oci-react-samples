@@ -29,6 +29,11 @@ public class IssueService {
         return issueRepository.findById(id);
     }
 
+    // Get issues by assignee
+    public List<Issue> getIssuesByAssignee(Long assigneeId) {
+        return issueRepository.findByAssignee(assigneeId);
+    }
+
     // Update an existing issue
     public Issue updateIssue(Long id, Issue issueDetails) throws Exception {
         Issue issue = issueRepository.findById(id)
@@ -43,6 +48,7 @@ public class IssueService {
         issue.setIdSprint(issueDetails.getIdSprint());
         issue.setTeam(issueDetails.getTeam());
         issue.setStatus(issueDetails.getStatus());
+        issue.setHoursWorked(issueDetails.getHoursWorked());
 
         return issueRepository.save(issue);
     }
