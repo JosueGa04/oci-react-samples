@@ -9,9 +9,11 @@ import {
   CircularProgress,
   Box,
   Grid,
+  Typography,
 } from "@mui/material";
 
 const ISSUES_API_URL = "/issues";
+const USERS_API_URL = "/users"; // Nueva URL para obtener usuarios
 
 function AlertForm(props) {
   const [alertData, setAlertData] = useState({
@@ -25,11 +27,15 @@ function AlertForm(props) {
   });
 
   const [issues, setIssues] = useState([]);
+  const [users, setUsers] = useState([]); // Nuevo estado para usuarios
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false); // Nuevo estado para carga de usuarios
   const [error, setError] = useState(null);
+  const [userError, setUserError] = useState(null); // Nuevo estado para errores de usuarios
 
   useEffect(() => {
     loadIssues();
+    loadUsers(); // Cargar usuarios al iniciar
   }, []);
 
   function loadIssues() {
@@ -58,6 +64,30 @@ function AlertForm(props) {
       });
   }
 
+  function loadUsers() {
+    setIsLoadingUsers(true);
+    setUserError(null);
+
+    fetch(USERS_API_URL)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Error en la respuesta: ${response.status} ${response.statusText}`
+          );
+        }
+        return response.json();
+      })
+      .then((result) => {
+        setIsLoadingUsers(false);
+        setUsers(result);
+      })
+      .catch((error) => {
+        console.error("Error cargando usuarios:", error);
+        setIsLoadingUsers(false);
+        setUserError(error);
+      });
+  }
+
   function handleChange(e) {
     const { name, value } = e.target;
     setAlertData((prevData) => ({
@@ -75,7 +105,6 @@ function AlertForm(props) {
         taskId: "",
         task: "",
         projectId: "",
-        userId: "",
       }));
       return;
     }
@@ -103,6 +132,11 @@ function AlertForm(props) {
       alert(
         "Por favor, seleccione una tarea o complete los campos de tarea manualmente."
       );
+      return;
+    }
+
+    if (!alertData.userId) {
+      alert("Por favor, seleccione un usuario para enviar la alerta.");
       return;
     }
 
@@ -135,7 +169,6 @@ function AlertForm(props) {
       });
   }
 
-
   function handleSendNow(e) {
     e.preventDefault();
     if (!alertData.message.trim()) {
@@ -147,6 +180,11 @@ function AlertForm(props) {
       alert(
         "Por favor, seleccione una tarea o complete los campos de tarea manualmente."
       );
+      return;
+    }
+
+    if (!alertData.userId) {
+      alert("Por favor, seleccione un usuario para enviar la alerta.");
       return;
     }
 
@@ -179,7 +217,9 @@ function AlertForm(props) {
       });
   }
 
-
+  function retryLoadUsers() {
+    loadUsers();
+  }
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
@@ -263,13 +303,45 @@ function AlertForm(props) {
           />
         </Grid>
         <Grid item xs={6}>
-          <TextField
-            fullWidth
-            label="User ID"
-            name="userId"
-            value={alertData.userId}
-            onChange={handleChange}
-          />
+          <FormControl fullWidth>
+            <InputLabel>Usuario</InputLabel>
+            {isLoadingUsers ? (
+              <Box sx={{ display: "flex", alignItems: "center", p: 2 }}>
+                <CircularProgress size={24} />
+                <Typography variant="caption" sx={{ ml: 1 }}>
+                  Cargando usuarios...
+                </Typography>
+              </Box>
+            ) : userError ? (
+              <Box>
+                <Typography color="error" variant="caption">
+                  Error al cargar usuarios: {userError.message}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={retryLoadUsers}
+                  sx={{ mt: 1, display: "block" }}
+                >
+                  Reintentar
+                </Button>
+              </Box>
+            ) : (
+              <Select
+                name="userId"
+                value={alertData.userId}
+                onChange={handleChange}
+                required
+              >
+                <MenuItem value="">-- Seleccionar un usuario --</MenuItem>
+                {users.map((user) => (
+                  <MenuItem key={user.userId} value={user.userId.toString()}>
+                    {user.userName}
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
+          </FormControl>
         </Grid>
         <Grid item xs={6}>
           <FormControl fullWidth>
@@ -299,7 +371,6 @@ function AlertForm(props) {
         </Grid>
       </Grid>
 
-
       <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'flex-end' }}>
         <Button
           variant="contained"
@@ -318,8 +389,6 @@ function AlertForm(props) {
           Programar
         </Button>
       </Box>
-
-
     </Box>
   );
 }

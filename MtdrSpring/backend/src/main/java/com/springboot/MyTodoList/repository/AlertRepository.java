@@ -26,6 +26,9 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     // Find alerts by taskId
     List<Alert> findByTaskId(Long taskId);
 
+    @Query("SELECT DISTINCT a.userId FROM Alert a WHERE a.userId IS NOT NULL")
+    List<Object[]> findAllUserChatIds();
+
     // Update the status of an alert (for example, from PENDING to SENT)
     @Modifying
     @Query("UPDATE Alert a SET a.status = :status WHERE a.id = :alertId")
