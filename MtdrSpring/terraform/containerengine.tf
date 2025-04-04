@@ -8,7 +8,7 @@ resource "oci_containerengine_cluster" "mtdrworkshop_cluster" {
     ]
     subnet_id = oci_core_subnet.endpoint.id
   }
-  kubernetes_version  = "v1.32.1"
+  kubernetes_version  = "v1.30.1"
   name                = "mtdrworkshopcluster-${var.mtdrKey}"
   vcn_id              = oci_core_vcn.okevcn.id
   #optional
@@ -36,7 +36,7 @@ resource "oci_containerengine_node_pool" "oke_node_pool" {
   #Required
   cluster_id         = oci_containerengine_cluster.mtdrworkshop_cluster.id
   compartment_id     = var.ociCompartmentOcid
-  kubernetes_version = "v1.32.1"
+  kubernetes_version = "v1.30.1"
   name               = "Pool"
   #node_shape        = "VM.Standard.A1.Flex"  #Always Free Option
   node_shape         = "VM.Standard.E3.Flex"
@@ -82,6 +82,6 @@ data "oci_containerengine_node_pool_option" "mtdrworkshop_node_pool_option" {
 locals {
   all_sources = data.oci_containerengine_node_pool_option.mtdrworkshop_node_pool_option.sources
   #oracle_linux_images = [for source in local.all_sources : source.image_id if length(regexall("Oracle-Linux-[0-9]*.[0-9]*-aarch64-20[0-9]*",source.source_name)) > 0] #ARM Option
-  oracle_linux_images = [for source in local.all_sources : source.image_id if length(regexall("Oracle-Linux-[0-9]*.[0-9]*-20[0-9]*.*1.32.1",source.source_name)) > 0]
+  oracle_linux_images = [for source in local.all_sources : source.image_id if length(regexall("Oracle-Linux-[0-9]*.[0-9]*-20[0-9]*.*1.30.1",source.source_name)) > 0]
 
 }
