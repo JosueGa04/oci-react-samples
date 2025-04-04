@@ -72,7 +72,7 @@ const Dashboard = ({ children }) => {
         return <Sprints />;
       case "alerts":
         return <Alerts />;
-        case "tasks":
+      case "tasks":
         return <Tasks />;
       case "dashboard":
         return children;
@@ -85,7 +85,11 @@ const Dashboard = ({ children }) => {
     <Box sx={{ display: "flex" }}>
       <AppBar
         position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: "#312d2a",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+        }}
       >
         <Toolbar>
           <IconButton
@@ -97,9 +101,27 @@ const Dashboard = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            My Dashboard
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box
+              component="img"
+              src="https://brandlogos.net/wp-content/uploads/2021/10/oracle-logo-symbol-vector-512x512.png"
+              alt="Oracle Logo"
+              sx={{
+                height: 40,
+                width: 40,
+                mr: 2,
+                filter: "brightness(0) invert(1)",
+              }}
+            />
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{ color: "#fff" }}
+            >
+              My Dashboard
+            </Typography>
+          </Box>
         </Toolbar>
       </AppBar>
       <Drawer
@@ -109,6 +131,8 @@ const Dashboard = ({ children }) => {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
+            backgroundColor: "#312d2a",
+            color: "#fff",
           },
         }}
         variant="persistent"
@@ -116,7 +140,7 @@ const Dashboard = ({ children }) => {
         open={open}
       >
         <Toolbar />
-        <Divider />
+        <Divider sx={{ backgroundColor: "rgba(255,255,255,0.1)" }} />
         <List>
           {menuItems.map((item) => (
             <ListItem
@@ -124,8 +148,25 @@ const Dashboard = ({ children }) => {
               key={item.text}
               onClick={() => handleNavigation(item.view)}
               selected={currentView === item.view}
+              sx={{
+                "&.Mui-selected": {
+                  backgroundColor: "#c74634",
+                  "&:hover": {
+                    backgroundColor: "#c74634",
+                  },
+                  "& .MuiListItemIcon-root": {
+                    color: "#fff",
+                  },
+                },
+                "&:hover": {
+                  backgroundColor: "rgba(199, 70, 52, 0.1)",
+                },
+                "& .MuiListItemIcon-root": {
+                  color: "#fff",
+                },
+              }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemIcon sx={{ color: "#fff" }}>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItem>
           ))}

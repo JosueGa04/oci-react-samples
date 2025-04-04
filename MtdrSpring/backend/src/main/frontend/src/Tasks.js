@@ -20,6 +20,8 @@ import {
   FormControl,
   InputLabel,
   Chip,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import {
   Delete as DeleteIcon,
@@ -45,9 +47,12 @@ const Tasks = () => {
     issueType: "",
     estimation: "",
     assignee: "",
+    status: 0,
     team: "",
     idSprint: "",
   });
+
+  const theme = useTheme();
 
   useEffect(() => {
     fetchTasks();
@@ -99,6 +104,7 @@ const Tasks = () => {
         assignee: task.assignee ? task.assignee.toString() : "",
         team: task.team,
         idSprint: task.idSprint || "",
+        status: task.status || 0, // Mantener el estado existente o establecerlo en 0
       });
     } else {
       setEditingTask(null);
@@ -111,6 +117,7 @@ const Tasks = () => {
         assignee: "",
         team: "",
         idSprint: "",
+        status: 0, // Establecer el estado en 0 por defecto
       });
     }
     setOpenDialog(true);
@@ -190,86 +197,198 @@ const Tasks = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-        <Typography variant="h4">Tasks</Typography>
+    <Box
+      sx={{
+        p: 4,
+        backgroundColor: alpha("#f5f5f5", 0.95),
+        minHeight: "100vh",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          mb: 4,
+          alignItems: "center",
+        }}
+      >
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            color: "#312d2a",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+          }}
+        >
+          Tasks
+        </Typography>
         <Button
           variant="contained"
-          color="primary"
           onClick={() => handleOpenDialog()}
+          sx={{
+            backgroundColor: "#c74634",
+            borderRadius: "12px",
+            textTransform: "none",
+            px: 3,
+            py: 1,
+            boxShadow: "0 4px 12px rgba(199, 70, 52, 0.2)",
+            "&:hover": {
+              backgroundColor: "#b13d2b",
+              transform: "translateY(-2px)",
+              boxShadow: "0 6px 16px rgba(199, 70, 52, 0.3)",
+            },
+            transition: "all 0.2s ease-in-out",
+          }}
         >
           Create New Task
         </Button>
       </Box>
 
-      <Paper sx={{ mt: 2 }}>
+      <Paper
+        sx={{
+          mt: 2,
+          borderRadius: "16px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          overflow: "hidden",
+        }}
+      >
         <List>
           {tasks.map((task) => (
-            <ListItem key={task.issueId}>
+            <ListItem
+              key={task.issueId}
+              sx={{
+                borderBottom: `1px solid ${alpha("#312d2a", 0.1)}`,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  backgroundColor: alpha("#c74634", 0.04),
+                },
+              }}
+            >
               <ListItemText
                 primary={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="subtitle1">
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        color: "#312d2a",
+                      }}
+                    >
                       {task.issueTitle}
                     </Typography>
                     <Chip
-                      label={task.status === 1 ? "COMPLETED" : "NON-COMPLETED"}
-                      color={task.status === 1 ? "success" : "default"}
+                      label={task.status === 1 ? "COMPLETED" : "IN PROGRESS"}
+                      color={task.status === 1 ? "success" : "warning"}
                       size="small"
+                      sx={{
+                        borderRadius: "8px",
+                        fontWeight: 600,
+                        "& .MuiChip-label": {
+                          px: 2,
+                        },
+                      }}
                     />
                   </Box>
                 }
                 secondary={
-                  <>
-                    <Typography component="span" variant="body2">
+                  <Box sx={{ pl: 1 }}>
+                    <Typography
+                      component="span"
+                      variant="body1"
+                      sx={{
+                        color: alpha("#312d2a", 0.7),
+                        display: "block",
+                        mb: 1,
+                      }}
+                    >
                       {task.issueDescription}
                     </Typography>
-                    <br />
-                    <Typography component="span" variant="body2">
-                      Due: {new Date(task.dueDate).toLocaleDateString()}
-                    </Typography>
-                    {task.idSprint && (
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        sx={{ display: "block" }}
-                      >
-                        Sprint:{" "}
-                        {sprints.find((s) => s.idSprint === task.idSprint)
-                          ?.sprintGoal || `Sprint ${task.idSprint}`}
-                      </Typography>
-                    )}
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      sx={{ display: "block" }}
-                    >
-                      Type: {task.issueType}
-                    </Typography>
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      sx={{ display: "block" }}
-                    >
-                      Estimation: {task.estimation} points
-                    </Typography>
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      sx={{ display: "block" }}
-                    >
-                      Assignee:{" "}
-                      {users.find((u) => u.userId === task.assignee)
-                        ?.userName || "Unassigned"}
-                    </Typography>
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      sx={{ display: "block" }}
-                    >
-                      Team: {task.team}
-                    </Typography>
-                  </>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          sx={{
+                            color: alpha("#312d2a", 0.7),
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
+                          Due: {new Date(task.dueDate).toLocaleDateString()}
+                        </Typography>
+                        {task.idSprint && (
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            sx={{
+                              color: alpha("#312d2a", 0.7),
+                              display: "block",
+                              mb: 0.5,
+                            }}
+                          >
+                            Sprint:{" "}
+                            {sprints.find((s) => s.idSprint === task.idSprint)
+                              ?.sprintGoal || `Sprint ${task.idSprint}`}
+                          </Typography>
+                        )}
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          sx={{
+                            color: alpha("#312d2a", 0.7),
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
+                          Type: {task.issueType}
+                        </Typography>
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          sx={{
+                            color: alpha("#312d2a", 0.7),
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
+                          Estimation: {task.estimation} points
+                        </Typography>
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          sx={{
+                            color: alpha("#312d2a", 0.7),
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
+                          Assignee:{" "}
+                          {users.find((u) => u.userId === task.assignee)
+                            ?.userName || "Unassigned"}
+                        </Typography>
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          sx={{
+                            color: alpha("#312d2a", 0.7),
+                            display: "block",
+                          }}
+                        >
+                          Team: {task.team}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Box>
                 }
               />
               <ListItemSecondaryAction>
@@ -277,16 +396,42 @@ const Tasks = () => {
                   edge="end"
                   onClick={() => handleStatusToggle(task.issueId, task.status)}
                   color={task.status === 1 ? "success" : "default"}
-                  sx={{ mr: 2 }}
+                  sx={{
+                    mr: 2,
+                    "&:hover": {
+                      backgroundColor: alpha(
+                        task.status === 1
+                          ? theme.palette.success.main
+                          : "#c74634",
+                        0.1
+                      ),
+                    },
+                  }}
                 >
                   {task.status === 1 ? <CheckCircleIcon /> : <CancelIcon />}
                 </IconButton>
-                <IconButton edge="end" onClick={() => handleOpenDialog(task)}>
+                <IconButton
+                  edge="end"
+                  onClick={() => handleOpenDialog(task)}
+                  sx={{
+                    mr: 2,
+                    color: "#c74634",
+                    "&:hover": {
+                      backgroundColor: alpha("#c74634", 0.1),
+                    },
+                  }}
+                >
                   <EditIcon />
                 </IconButton>
                 <IconButton
                   edge="end"
                   onClick={() => handleDelete(task.issueId)}
+                  sx={{
+                    color: "#c74634",
+                    "&:hover": {
+                      backgroundColor: alpha("#c74634", 0.1),
+                    },
+                  }}
                 >
                   <DeleteIcon />
                 </IconButton>
@@ -301,13 +446,26 @@ const Tasks = () => {
         onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "16px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+          },
+        }}
       >
-        <DialogTitle>
-          {editingTask ? "Edit Task" : "Create New Task"}
+        <DialogTitle
+          sx={{
+            pb: 1,
+            borderBottom: `1px solid ${alpha("#312d2a", 0.1)}`,
+          }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 600, color: "#312d2a" }}>
+            {editingTask ? "Edit Task" : "Create New Task"}
+          </Typography>
         </DialogTitle>
-        <DialogContent>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-            <Grid container spacing={2}>
+        <DialogContent sx={{ mt: 2 }}>
+          <Box component="form" onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
@@ -316,6 +474,17 @@ const Tasks = () => {
                   value={formData.issueTitle}
                   onChange={handleChange}
                   required
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
+                      "&:hover fieldset": {
+                        borderColor: "#c74634",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#c74634",
+                      },
+                    },
+                  }}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -327,6 +496,15 @@ const Tasks = () => {
                     onChange={handleChange}
                     label="Issue Type"
                     required
+                    sx={{
+                      borderRadius: "8px",
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#c74634",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#c74634",
+                      },
+                    }}
                   >
                     <MenuItem value="EPIC">Epic</MenuItem>
                     <MenuItem value="STORY">Story</MenuItem>
@@ -343,6 +521,17 @@ const Tasks = () => {
                   onChange={handleChange}
                   multiline
                   rows={4}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
+                      "&:hover fieldset": {
+                        borderColor: "#c74634",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#c74634",
+                      },
+                    },
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -354,6 +543,17 @@ const Tasks = () => {
                   value={formData.dueDate}
                   onChange={handleChange}
                   InputLabelProps={{ shrink: true }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
+                      "&:hover fieldset": {
+                        borderColor: "#c74634",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#c74634",
+                      },
+                    },
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -365,6 +565,15 @@ const Tasks = () => {
                     onChange={handleChange}
                     label="Estimation"
                     required
+                    sx={{
+                      borderRadius: "8px",
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#c74634",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#c74634",
+                      },
+                    }}
                   >
                     <MenuItem value={1}>1</MenuItem>
                     <MenuItem value={2}>2</MenuItem>
@@ -381,6 +590,15 @@ const Tasks = () => {
                     value={formData.assignee}
                     onChange={handleChange}
                     label="Assignee"
+                    sx={{
+                      borderRadius: "8px",
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#c74634",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#c74634",
+                      },
+                    }}
                   >
                     <MenuItem value="">
                       <em>None</em>
@@ -400,6 +618,17 @@ const Tasks = () => {
                   name="team"
                   value={formData.team}
                   onChange={handleChange}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
+                      "&:hover fieldset": {
+                        borderColor: "#c74634",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#c74634",
+                      },
+                    },
+                  }}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -410,6 +639,15 @@ const Tasks = () => {
                     value={formData.idSprint}
                     onChange={handleChange}
                     label="Sprint"
+                    sx={{
+                      borderRadius: "8px",
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#c74634",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#c74634",
+                      },
+                    }}
                   >
                     <MenuItem value="">
                       <em>None</em>
@@ -427,9 +665,41 @@ const Tasks = () => {
             </Grid>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2,
+            borderTop: `1px solid ${alpha("#312d2a", 0.1)}`,
+          }}
+        >
+          <Button
+            onClick={handleCloseDialog}
+            sx={{
+              textTransform: "none",
+              px: 3,
+              color: "#312d2a",
+              "&:hover": {
+                backgroundColor: alpha("#312d2a", 0.1),
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            sx={{
+              textTransform: "none",
+              px: 3,
+              borderRadius: "8px",
+              backgroundColor: "#c74634",
+              boxShadow: "0 4px 12px rgba(199, 70, 52, 0.2)",
+              "&:hover": {
+                backgroundColor: "#b13d2b",
+                boxShadow: "0 6px 16px rgba(199, 70, 52, 0.3)",
+              },
+            }}
+          >
             {editingTask ? "Update" : "Create"}
           </Button>
         </DialogActions>
