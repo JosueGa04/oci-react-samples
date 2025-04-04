@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SprintRepository extends JpaRepository<Sprint, Long> {
     // Additional query methods can be defined here if needed
+    List<Issue> findByAssignee(Long assigneeId);
 } 
