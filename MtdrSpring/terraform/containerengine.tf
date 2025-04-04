@@ -36,7 +36,7 @@ resource "oci_containerengine_node_pool" "oke_node_pool" {
   #Required
   cluster_id         = oci_containerengine_cluster.mtdrworkshop_cluster.id
   compartment_id     = var.ociCompartmentOcid
-  kubernetes_version = "v1.30.1"
+  kubernetes_version = "v1.32.1"
   name               = "Pool"
   #node_shape        = "VM.Standard.A1.Flex"  #Always Free Option
   node_shape         = "VM.Standard.E3.Flex"
