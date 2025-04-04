@@ -20,6 +20,7 @@ import {
   IconButton,
   Typography,
   CircularProgress,
+  alpha,
 } from "@mui/material";
 import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
 import AlertForm from "./AlertForm";
@@ -102,10 +103,38 @@ function Alerts() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-        <Typography variant="h4">Gestión de Alertas</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openForm}>
+    <Box sx={{ p: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 4 }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            color: "#312d2a",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+          }}
+        >
+          Gestión de Alertas
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={openForm}
+          sx={{
+            backgroundColor: "#c74634",
+            borderRadius: "12px",
+            textTransform: "none",
+            px: 3,
+            py: 1,
+            boxShadow: "0 4px 12px rgba(199, 70, 52, 0.2)",
+            "&:hover": {
+              backgroundColor: "#b13d2b",
+              transform: "translateY(-2px)",
+              boxShadow: "0 6px 16px rgba(199, 70, 52, 0.3)",
+            },
+            transition: "all 0.2s ease-in-out",
+          }}
+        >
           Nueva Alerta
         </Button>
       </Box>
@@ -115,10 +144,15 @@ function Alerts() {
           <Typography>Error: {error.message}</Typography>
           <Button
             variant="contained"
-            color="primary"
             onClick={retryLoadAlerts}
             size="small"
-            sx={{ mt: 1 }}
+            sx={{
+              mt: 1,
+              backgroundColor: "#c74634",
+              "&:hover": {
+                backgroundColor: "#b13d2b",
+              },
+            }}
           >
             Reintentar
           </Button>
@@ -127,19 +161,36 @@ function Alerts() {
 
       {isLoading ? (
         <Box sx={{ textAlign: "center", p: 3 }}>
-          <CircularProgress />
+          <CircularProgress sx={{ color: "#c74634" }} />
           <Typography>Cargando alertas...</Typography>
         </Box>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer
+          component={Paper}
+          sx={{
+            borderRadius: "16px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+            overflow: "hidden",
+          }}
+        >
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>Mensaje</TableCell>
-                <TableCell>Tarea</TableCell>
-                <TableCell>Prioridad</TableCell>
-                <TableCell>Hora Programada</TableCell>
-                <TableCell>Acciones</TableCell>
+              <TableRow sx={{ backgroundColor: alpha("#312d2a", 0.05) }}>
+                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                  Mensaje
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                  Tarea
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                  Prioridad
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                  Hora Programada
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                  Acciones
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -151,7 +202,15 @@ function Alerts() {
                 </TableRow>
               ) : (
                 alerts.map((alert) => (
-                  <TableRow key={alert.id}>
+                  <TableRow
+                    key={alert.id}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: alpha("#c74634", 0.04),
+                      },
+                      transition: "all 0.2s ease",
+                    }}
+                  >
                     <TableCell>{alert.message}</TableCell>
                     <TableCell>{alert.task}</TableCell>
                     <TableCell>
@@ -159,10 +218,10 @@ function Alerts() {
                         sx={{
                           color:
                             alert.priority === "ALTA"
-                              ? "error.main"
+                              ? "#c74634"
                               : alert.priority === "MEDIA"
-                              ? "warning.main"
-                              : "success.main",
+                              ? "#f39c12"
+                              : "#27ae60",
                           fontWeight: "bold",
                         }}
                       >
@@ -179,6 +238,12 @@ function Alerts() {
                         aria-label="delete"
                         onClick={() => deleteAlert(alert.id)}
                         size="small"
+                        sx={{
+                          color: "#c74634",
+                          "&:hover": {
+                            backgroundColor: alpha("#c74634", 0.1),
+                          },
+                        }}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -191,8 +256,28 @@ function Alerts() {
         </TableContainer>
       )}
 
-      <Dialog open={isFormOpen} onClose={closeForm} maxWidth="md" fullWidth>
-        <DialogTitle>Crear Nueva Alerta</DialogTitle>
+      <Dialog
+        open={isFormOpen}
+        onClose={closeForm}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "16px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            pb: 1,
+            borderBottom: `1px solid ${alpha("#312d2a", 0.1)}`,
+          }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 600, color: "#312d2a" }}>
+            Crear Nueva Alerta
+          </Typography>
+        </DialogTitle>
         <DialogContent>
           <AlertForm onClose={closeForm} onAlertCreated={handleAlertCreated} />
         </DialogContent>
