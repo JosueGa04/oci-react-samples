@@ -46,7 +46,7 @@ const Tasks = () => {
     estimation: "",
     assignee: "",
     team: "",
-    sprintID: "",
+    idSprint: "",
   });
 
   useEffect(() => {
@@ -98,7 +98,7 @@ const Tasks = () => {
         estimation: task.estimation,
         assignee: task.assignee ? task.assignee.toString() : "",
         team: task.team,
-        sprintID: task.sprintID || "",
+        idSprint: task.idSprint || "",
       });
     } else {
       setEditingTask(null);
@@ -110,7 +110,7 @@ const Tasks = () => {
         estimation: "",
         assignee: "",
         team: "",
-        sprintID: "",
+        idSprint: "",
       });
     }
     setOpenDialog(true);
@@ -228,15 +228,15 @@ const Tasks = () => {
                     <Typography component="span" variant="body2">
                       Due: {new Date(task.dueDate).toLocaleDateString()}
                     </Typography>
-                    {task.sprintID && (
+                    {task.idSprint && (
                       <Typography
                         component="span"
                         variant="body2"
                         sx={{ display: "block" }}
                       >
                         Sprint:{" "}
-                        {sprints.find((s) => s.idSprint === task.sprintID)
-                          ?.sprintName || "Unknown Sprint"}
+                        {sprints.find((s) => s.idSprint === task.idSprint)
+                          ?.sprintGoal || `Sprint ${task.idSprint}`}
                       </Typography>
                     )}
                     <Typography
@@ -406,8 +406,8 @@ const Tasks = () => {
                 <FormControl fullWidth>
                   <InputLabel>Sprint</InputLabel>
                   <Select
-                    name="sprintID"
-                    value={formData.sprintID}
+                    name="idSprint"
+                    value={formData.idSprint}
                     onChange={handleChange}
                     label="Sprint"
                   >
@@ -416,7 +416,9 @@ const Tasks = () => {
                     </MenuItem>
                     {sprints.map((sprint) => (
                       <MenuItem key={sprint.idSprint} value={sprint.idSprint}>
-                        {sprint.sprintID || `Sprint ${sprint.sprintGoal}`}
+                        {`Sprint ${sprint.idSprint}: ${
+                          sprint.sprintGoal || "No goal"
+                        }`}
                       </MenuItem>
                     ))}
                   </Select>
