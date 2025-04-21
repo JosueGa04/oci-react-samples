@@ -197,51 +197,22 @@ const Tasks = () => {
   };
 
   return (
-    <Box
-      sx={{
-        p: 4,
-        backgroundColor: alpha("#f5f5f5", 0.95),
-        minHeight: "100vh",
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          mb: 4,
-          alignItems: "center",
-        }}
-      >
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            color: "#312d2a",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
-        >
-          Tasks
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+        <Typography variant="h4" sx={{ color: "#312d2a" }}>
+          Backlog
         </Typography>
         <Button
           variant="contained"
           onClick={() => handleOpenDialog()}
           sx={{
             backgroundColor: "#c74634",
-            borderRadius: "12px",
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            boxShadow: "0 4px 12px rgba(199, 70, 52, 0.2)",
             "&:hover": {
               backgroundColor: "#b13d2b",
-              transform: "translateY(-2px)",
-              boxShadow: "0 6px 16px rgba(199, 70, 52, 0.3)",
             },
-            transition: "all 0.2s ease-in-out",
           }}
         >
-          Create New Task
+          Add Task
         </Button>
       </Box>
 
@@ -263,179 +234,176 @@ const Tasks = () => {
                 "&:hover": {
                   backgroundColor: alpha("#c74634", 0.04),
                 },
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "stretch",
+                py: 2,
               }}
             >
-              <ListItemText
-                primary={
-                  <Box
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  width: "100%",
+                  mb: 1,
+                }}
+              >
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="h6"
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                      mb: 1,
+                      fontWeight: 600,
+                      color: "#312d2a",
+                      wordBreak: "break-word",
                     }}
                   >
+                    {task.issueTitle}
+                  </Typography>
+                  <Chip
+                    label={task.status === 1 ? "COMPLETED" : "IN PROGRESS"}
+                    color={task.status === 1 ? "success" : "warning"}
+                    size="small"
+                    sx={{
+                      borderRadius: "8px",
+                      fontWeight: 600,
+                      "& .MuiChip-label": {
+                        px: 2,
+                      },
+                    }}
+                  />
+                </Box>
+                <Box sx={{ display: "flex", gap: 1, ml: 2 }}>
+                  <IconButton
+                    onClick={() =>
+                      handleStatusToggle(task.issueId, task.status)
+                    }
+                    color={task.status === 1 ? "success" : "default"}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: alpha(
+                          task.status === 1
+                            ? theme.palette.success.main
+                            : "#c74634",
+                          0.1
+                        ),
+                      },
+                    }}
+                  >
+                    {task.status === 1 ? <CheckCircleIcon /> : <CancelIcon />}
+                  </IconButton>
+                  <IconButton
+                    onClick={() => handleOpenDialog(task)}
+                    sx={{
+                      color: "#c74634",
+                      "&:hover": {
+                        backgroundColor: alpha("#c74634", 0.1),
+                      },
+                    }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => handleDelete(task.issueId)}
+                    sx={{
+                      color: "#c74634",
+                      "&:hover": {
+                        backgroundColor: alpha("#c74634", 0.1),
+                      },
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              </Box>
+
+              {task.issueDescription && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: alpha("#312d2a", 0.7),
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {task.issueDescription}
+                  </Typography>
+                </Box>
+              )}
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  {task.dueDate && (
                     <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 600,
-                        color: "#312d2a",
-                      }}
-                    >
-                      {task.issueTitle}
-                    </Typography>
-                    <Chip
-                      label={task.status === 1 ? "COMPLETED" : "IN PROGRESS"}
-                      color={task.status === 1 ? "success" : "warning"}
-                      size="small"
-                      sx={{
-                        borderRadius: "8px",
-                        fontWeight: 600,
-                        "& .MuiChip-label": {
-                          px: 2,
-                        },
-                      }}
-                    />
-                  </Box>
-                }
-                secondary={
-                  <Box sx={{ pl: 1 }}>
-                    <Typography
-                      component="span"
-                      variant="body1"
+                      variant="body2"
                       sx={{
                         color: alpha("#312d2a", 0.7),
                         display: "block",
                         mb: 1,
                       }}
                     >
-                      {task.issueDescription}
+                      Due: {new Date(task.dueDate).toLocaleDateString()}
                     </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          sx={{
-                            color: alpha("#312d2a", 0.7),
-                            display: "block",
-                            mb: 0.5,
-                          }}
-                        >
-                          Due: {new Date(task.dueDate).toLocaleDateString()}
-                        </Typography>
-                        {task.idSprint && (
-                          <Typography
-                            component="span"
-                            variant="body2"
-                            sx={{
-                              color: alpha("#312d2a", 0.7),
-                              display: "block",
-                              mb: 0.5,
-                            }}
-                          >
-                            Sprint:{" "}
-                            {sprints.find((s) => s.idSprint === task.idSprint)
-                              ?.sprintGoal || `Sprint ${task.idSprint}`}
-                          </Typography>
-                        )}
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          sx={{
-                            color: alpha("#312d2a", 0.7),
-                            display: "block",
-                            mb: 0.5,
-                          }}
-                        >
-                          Type: {task.issueType}
-                        </Typography>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          sx={{
-                            color: alpha("#312d2a", 0.7),
-                            display: "block",
-                            mb: 0.5,
-                          }}
-                        >
-                          Estimation: {task.estimation} points
-                        </Typography>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          sx={{
-                            color: alpha("#312d2a", 0.7),
-                            display: "block",
-                            mb: 0.5,
-                          }}
-                        >
-                          Assignee:{" "}
-                          {users.find((u) => u.userId === task.assignee)
-                            ?.userName || "Unassigned"}
-                        </Typography>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          sx={{
-                            color: alpha("#312d2a", 0.7),
-                            display: "block",
-                          }}
-                        >
-                          Team: {task.team}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                }
-              />
-              <ListItemSecondaryAction>
-                <IconButton
-                  edge="end"
-                  onClick={() => handleStatusToggle(task.issueId, task.status)}
-                  color={task.status === 1 ? "success" : "default"}
-                  sx={{
-                    mr: 2,
-                    "&:hover": {
-                      backgroundColor: alpha(
-                        task.status === 1
-                          ? theme.palette.success.main
-                          : "#c74634",
-                        0.1
-                      ),
-                    },
-                  }}
-                >
-                  {task.status === 1 ? <CheckCircleIcon /> : <CancelIcon />}
-                </IconButton>
-                <IconButton
-                  edge="end"
-                  onClick={() => handleOpenDialog(task)}
-                  sx={{
-                    mr: 2,
-                    color: "#c74634",
-                    "&:hover": {
-                      backgroundColor: alpha("#c74634", 0.1),
-                    },
-                  }}
-                >
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  edge="end"
-                  onClick={() => handleDelete(task.issueId)}
-                  sx={{
-                    color: "#c74634",
-                    "&:hover": {
-                      backgroundColor: alpha("#c74634", 0.1),
-                    },
-                  }}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </ListItemSecondaryAction>
+                  )}
+                  {task.idSprint && (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: alpha("#312d2a", 0.7),
+                        display: "block",
+                        mb: 1,
+                      }}
+                    >
+                      Sprint:{" "}
+                      {sprints.find((s) => s.idSprint === task.idSprint)
+                        ?.sprintGoal || `Sprint ${task.idSprint}`}
+                    </Typography>
+                  )}
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: alpha("#312d2a", 0.7),
+                      display: "block",
+                      mb: 1,
+                    }}
+                  >
+                    Type: {task.issueType}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: alpha("#312d2a", 0.7),
+                      display: "block",
+                      mb: 1,
+                    }}
+                  >
+                    Estimation: {task.estimation} points
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: alpha("#312d2a", 0.7),
+                      display: "block",
+                      mb: 1,
+                    }}
+                  >
+                    Assignee:{" "}
+                    {users.find((u) => u.userId === task.assignee)?.userName ||
+                      "Unassigned"}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: alpha("#312d2a", 0.7),
+                      display: "block",
+                    }}
+                  >
+                    Team: {task.team}
+                  </Typography>
+                </Grid>
+              </Grid>
             </ListItem>
           ))}
         </List>
