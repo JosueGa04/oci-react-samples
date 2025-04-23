@@ -5,9 +5,12 @@ import org.springframework.stereotype.Repository;
 
 import com.springboot.MyTodoList.model.User;
 
+import java.util.List;
+
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     User findByUserId(String userId); // Método para buscar un usuario por su userId
     User findByTelegramId(Long telegramId);
-} 
+    List<User> findByUserRol(String userRol); // Method to find users by their role
+}
 
