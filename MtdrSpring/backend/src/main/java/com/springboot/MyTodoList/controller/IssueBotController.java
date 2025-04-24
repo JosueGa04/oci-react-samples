@@ -2,7 +2,10 @@ package com.springboot.MyTodoList.controller;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -71,9 +74,14 @@ public class IssueBotController extends TelegramLongPollingBot {
                 case "/CompleteIssue":
                     showCompleteIssuePrompt(chatId);
                     break;
+                case "/DevStats":
+                    showDeveloperStats(chatId, telegramId);
+                    break;
                 default:
                     if (messageText.startsWith("/complete ")) {
                         handleIssueCompletion(chatId, telegramId, messageText);
+                    } else if (messageText.startsWith("/devstats ")) {
+                        handleSpecificDeveloperStats(chatId, telegramId, messageText);
                     } else {
                         sendMessage(chatId, "Please use one of the available commands or buttons.");
                     }
@@ -88,7 +96,9 @@ public class IssueBotController extends TelegramLongPollingBot {
                 "Available commands:\n" +
                 BotLabels.MY_ASSIGNED_ISSUES.getLabel() + " - View your assigned issues\n" +
                 BotLabels.COMPLETE_ISSUE.getLabel() + " - Complete an issue\n" +
-                "/complete <issue_id> <hours> - Complete a specific issue with hours worked";
+                "/DevStats - View developer statistics\n" +
+                "/complete <issue_id> <hours> - Complete a specific issue with hours worked\n" +
+                "/devstats <developer_id> - View statistics for a specific developer";
 
         sendMessage(chatId, answer);
     }
@@ -184,6 +194,130 @@ public class IssueBotController extends TelegramLongPollingBot {
             sendMessage(chatId, "Error completing issue: " + e.getMessage());
         }
     }
+    
+    private void showDeveloperStats(long chatId, long telegramId) throws TelegramApiException {
+        User user = userService.findByTelegramId(telegramId);
+        if (user == null) {
+            sendMessage(chatId, "User not found. Please contact your administrator.");
+            return;
+        }
+        
+        // Check if the user has Project Manager rights
+        boolean isProjectManager = "Project Manager".equalsIgnoreCase(user.getUserRol());
+        
+        if (!isProjectManager) {
+            // If not Project Manager, just show their own stats
+            showSpecificDeveloperStats(chatId, user.getUserId());
+            return;
+        }
+        
+        // If Project Manager, show summary of all developers
+        List<User> developers = userService.getUsersByRole("DEVELOPER");
+        
+        if (developers.isEmpty()) {
+            sendMessage(chatId, "No developers found in the system.");
+            return;
+        }
+        
+        StringBuilder message = new StringBuilder("Developer Statistics Summary:\n\n");
+        
+        for (User developer : developers) {
+            List<Issue> completedIssues = issueService.getIssuesByAssignee(developer.getUserId()).stream()
+                    .filter(issue -> issue.getStatus() == 1)
+                    .collect(Collectors.toList());
+            
+            int totalIssues = completedIssues.size();
+            int totalHours = completedIssues.stream()
+                    .mapToInt(Issue::getHoursWorked)
+                    .sum();
+            
+            message.append("Developer: ").append(developer.getUserName())
+                  .append(" (ID: ").append(developer.getUserId()).append(")")
+                  .append("\nCompleted Tasks: ").append(totalIssues)
+                  .append("\nTotal Hours: ").append(totalHours)
+                  .append("\n\n");
+        }
+        
+        message.append("For detailed stats on a specific developer, use:\n")
+               .append("/devstats <developer_id>");
+        
+        sendMessage(chatId, message.toString());
+    }
+    
+    private void handleSpecificDeveloperStats(long chatId, long telegramId, String messageText) throws TelegramApiException {
+        User requestingUser = userService.findByTelegramId(telegramId);
+        if (requestingUser == null) {
+            sendMessage(chatId, "User not found. Please contact your administrator.");
+            return;
+        }
+        
+        // Check if user has Project Manager rights
+        boolean isProjectManager = "Project Manager".equalsIgnoreCase(requestingUser.getUserRol());
+        
+        try {
+            String command = messageText.substring("/devstats ".length()).trim();
+            Long developerId = Long.parseLong(command);
+            
+            // If not Project Manager, only allow viewing own stats
+            if (!isProjectManager && !developerId.equals(requestingUser.getUserId())) {
+                sendMessage(chatId, "You can only view your own statistics.");
+                return;
+            }
+            
+            showSpecificDeveloperStats(chatId, developerId);
+            
+        } catch (NumberFormatException e) {
+            sendMessage(chatId, "Invalid developer ID format. Use: /devstats <developer_id>\nExample: /devstats 42");
+        } catch (Exception e) {
+            logger.error("Error retrieving developer stats: " + e.getMessage(), e);
+            sendMessage(chatId, "Error retrieving developer statistics: " + e.getMessage());
+        }
+    }
+    
+    private void showSpecificDeveloperStats(long chatId, Long developerId) throws TelegramApiException {
+        try {
+            Optional<User> developerOpt = userService.getUserById(developerId);
+            if (!developerOpt.isPresent()) {
+                sendMessage(chatId, "Developer with ID " + developerId + " not found.");
+                return;
+            }
+            
+            User developer = developerOpt.get();
+            List<Issue> allIssues = issueService.getIssuesByAssignee(developerId);
+            
+            List<Issue> completedIssues = allIssues.stream()
+                    .filter(issue -> issue.getStatus() == 1)
+                    .collect(Collectors.toList());
+            
+            List<Issue> pendingIssues = allIssues.stream()
+                    .filter(issue -> issue.getStatus() != 1)
+                    .collect(Collectors.toList());
+            
+            int totalHours = completedIssues.stream()
+                    .mapToInt(Issue::getHoursWorked)
+                    .sum();
+            
+            StringBuilder message = new StringBuilder("Statistics for " + developer.getUserName() + ":\n\n");
+            message.append("Total Completed Tasks: ").append(completedIssues.size()).append("\n");
+            message.append("Total Hours Worked: ").append(totalHours).append("\n");
+            message.append("Pending Tasks: ").append(pendingIssues.size()).append("\n\n");
+            
+            if (!completedIssues.isEmpty()) {
+                message.append("Completed Tasks Details:\n");
+                for (Issue issue : completedIssues) {
+                    message.append("- Task ID: ").append(issue.getIssueId())
+                           .append(", Title: ").append(issue.getIssueTitle())
+                           .append(", Hours: ").append(issue.getHoursWorked())
+                           .append("\n");
+                }
+            }
+            
+            sendMessage(chatId, message.toString());
+        } catch (Exception e) {
+            logger.error("Error showing developer stats: " + e.getMessage(), e);
+            sendMessage(chatId, "Error retrieving developer statistics: " + e.getMessage());
+        }
+    }
 
     private void sendMessage(long chatId, String textToSend) throws TelegramApiException {
         SendMessage message = SendMessage.builder()
@@ -193,5 +327,4 @@ public class IssueBotController extends TelegramLongPollingBot {
         execute(message);
     }
 }
-    
-    
+

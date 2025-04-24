@@ -17,7 +17,7 @@ function App() {
   return (
     <Dashboard>
       <div className="App">
-        <h1>MY TODO LIST</h1>
+        <h1>TASKMASTER</h1>
       </div>
     </Dashboard>
   );
