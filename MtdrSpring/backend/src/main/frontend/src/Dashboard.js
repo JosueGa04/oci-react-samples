@@ -19,11 +19,13 @@ import {
   Notifications as NotificationsIcon,
   Settings as SettingsIcon,
   Timeline as TimelineIcon,
+  Assessment as AssessmentIcon,
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import Sprints from "./Sprints";
 import Tasks from "./Tasks";
 import Alerts from "./Alerts";
+import Reports from "./Reports";
 
 const drawerWidth = 240;
 
@@ -60,8 +62,9 @@ const Dashboard = ({ children }) => {
 
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, view: "dashboard" },
-    { text: "Tasks", icon: <AssignmentIcon />, view: "tasks" },
+    { text: "Backlog", icon: <AssignmentIcon />, view: "tasks" },
     { text: "Sprints", icon: <TimelineIcon />, view: "sprints" },
+    { text: "Reports", icon: <AssessmentIcon />, view: "reports" },
     { text: "Alerts", icon: <NotificationsIcon />, view: "alerts" },
     { text: "Settings", icon: <SettingsIcon />, view: "settings" },
   ];
@@ -74,6 +77,8 @@ const Dashboard = ({ children }) => {
         return <Alerts />;
       case "tasks":
         return <Tasks />;
+      case "reports":
+        return <Reports />;
       case "dashboard":
         return children;
       default:

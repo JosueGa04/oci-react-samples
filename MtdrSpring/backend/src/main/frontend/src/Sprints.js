@@ -18,14 +18,21 @@ import {
   Typography,
   Grid,
   alpha,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Chip,
 } from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
+  CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
 
 const API_URL = "/sprints";
+const ISSUES_URL = "/issues";
 
 const SprintForm = ({ sprint, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -101,9 +108,15 @@ const SprintForm = ({ sprint, onSubmit, onCancel }) => {
 
 const Sprints = () => {
   const [sprints, setSprints] = useState([]);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [issues, setIssues] = useState([]);
   const [selectedSprint, setSelectedSprint] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchSprints();
+    fetchIssues();
+  }, []);
 
   const fetchSprints = async () => {
     try {
@@ -111,15 +124,81 @@ const Sprints = () => {
       if (response.ok) {
         const data = await response.json();
         setSprints(data);
+        if (data.length > 0 && !selectedSprint) {
+          setSelectedSprint(data[0]);
+        }
       }
     } catch (error) {
       console.error("Error fetching sprints:", error);
     }
   };
 
-  useEffect(() => {
-    fetchSprints();
-  }, []);
+  const fetchIssues = async () => {
+    try {
+      const response = await fetch(ISSUES_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setIssues(data);
+      }
+    } catch (error) {
+      console.error("Error fetching issues:", error);
+    }
+  };
+
+  const handleSprintChange = (event) => {
+    const sprintId = event.target.value;
+    const sprint = sprints.find((s) => s.idSprint === sprintId);
+    setSelectedSprint(sprint);
+  };
+
+  const handleUnlinkIssues = async () => {
+    if (!selectedSprint) return;
+
+    try {
+      const sprintIssues = issues.filter(
+        (issue) =>
+          issue.idSprint === selectedSprint.idSprint && issue.status === 1
+      );
+
+      for (const issue of sprintIssues) {
+        const response = await fetch(`${ISSUES_URL}/${issue.issueId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...issue,
+            idSprint: null,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to unlink issue ${issue.issueId}`);
+        }
+      }
+
+      fetchIssues();
+    } catch (error) {
+      console.error("Error unlinking issues:", error);
+    }
+  };
+
+  const isSprintComplete = () => {
+    if (!selectedSprint) return false;
+    const sprintIssues = issues.filter(
+      (issue) => issue.idSprint === selectedSprint.idSprint
+    );
+    return (
+      sprintIssues.length > 0 &&
+      sprintIssues.every((issue) => issue.status === 1)
+    );
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
 
   const handleOpenDialog = (sprint = null) => {
     setSelectedSprint(sprint);
@@ -158,27 +237,6 @@ const Sprints = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this sprint?")) {
-      try {
-        const response = await fetch(`${API_URL}/${id}`, {
-          method: "DELETE",
-        });
-        if (response.ok) {
-          fetchSprints();
-        }
-      } catch (error) {
-        console.error("Error deleting sprint:", error);
-      }
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
-
   return (
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 4 }}>
@@ -191,7 +249,7 @@ const Sprints = () => {
             letterSpacing: "0.5px",
           }}
         >
-          Sprints Management
+          Sprint Management
         </Typography>
         <Button
           variant="contained"
@@ -216,78 +274,128 @@ const Sprints = () => {
         </Button>
       </Box>
 
-      <TableContainer
-        component={Paper}
-        sx={{
-          borderRadius: "16px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-          overflow: "hidden",
-        }}
-      >
-        <Table>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: alpha("#312d2a", 0.05) }}>
-              <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                ID
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                Sprint Goal
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                Start Date
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                End Date
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sprints.map((sprint) => (
-              <TableRow
-                key={sprint.idSprint}
+      <FormControl fullWidth sx={{ mb: 4 }}>
+        <InputLabel>Select Sprint</InputLabel>
+        <Select
+          value={selectedSprint?.idSprint || ""}
+          onChange={handleSprintChange}
+          label="Select Sprint"
+        >
+          {sprints.map((sprint) => (
+            <MenuItem key={sprint.idSprint} value={sprint.idSprint}>
+              Sprint {sprint.idSprint}: {sprint.sprintGoal || "No goal"}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      {selectedSprint && (
+        <>
+          <Paper
+            sx={{
+              p: 3,
+              mb: 4,
+              borderRadius: "16px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Sprint Details
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body1">
+                  <strong>Start Date:</strong>{" "}
+                  {formatDate(selectedSprint.startDate)}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>End Date:</strong>{" "}
+                  {formatDate(selectedSprint.endDate)}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body1">
+                  <strong>Goal:</strong> {selectedSprint.sprintGoal}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          <TableContainer
+            component={Paper}
+            sx={{
+              borderRadius: "16px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              overflow: "hidden",
+            }}
+          >
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: alpha("#312d2a", 0.05) }}>
+                  <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                    Task Name
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                    Status
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                    Estimation
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                    Hours Worked
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {issues
+                  .filter((issue) => issue.idSprint === selectedSprint.idSprint)
+                  .map((issue) => (
+                    <TableRow key={issue.issueId}>
+                      <TableCell>{issue.issueTitle}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={
+                            issue.status === 1 ? "COMPLETED" : "IN PROGRESS"
+                          }
+                          color={issue.status === 1 ? "success" : "warning"}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>{issue.estimation}</TableCell>
+                      <TableCell>{issue.hoursWorked}</TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {isSprintComplete() && (
+            <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                variant="contained"
+                startIcon={<CheckCircleIcon />}
+                onClick={handleUnlinkIssues}
                 sx={{
+                  backgroundColor: "#c74634",
+                  borderRadius: "12px",
+                  textTransform: "none",
+                  px: 3,
+                  py: 1,
+                  boxShadow: "0 4px 12px rgba(199, 70, 52, 0.2)",
                   "&:hover": {
-                    backgroundColor: alpha("#c74634", 0.04),
+                    backgroundColor: "#b13d2b",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px rgba(199, 70, 52, 0.3)",
                   },
-                  transition: "all 0.2s ease",
+                  transition: "all 0.2s ease-in-out",
                 }}
               >
-                <TableCell>{sprint.idSprint}</TableCell>
-                <TableCell>{sprint.sprintGoal}</TableCell>
-                <TableCell>{formatDate(sprint.startDate)}</TableCell>
-                <TableCell>{formatDate(sprint.endDate)}</TableCell>
-                <TableCell>
-                  <IconButton
-                    onClick={() => handleOpenDialog(sprint)}
-                    sx={{
-                      color: "#c74634",
-                      "&:hover": {
-                        backgroundColor: alpha("#c74634", 0.1),
-                      },
-                    }}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => handleDelete(sprint.idSprint)}
-                    sx={{
-                      color: "#c74634",
-                      "&:hover": {
-                        backgroundColor: alpha("#c74634", 0.1),
-                      },
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                Complete Sprint
+              </Button>
+            </Box>
+          )}
+        </>
+      )}
 
       <Dialog
         open={openDialog}

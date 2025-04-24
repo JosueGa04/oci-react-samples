@@ -24,6 +24,11 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    // Get users by role
+    public List<User> getUsersByRole(String role) {
+        return userRepository.findByUserRol(role);
+    }
+
     // Get user by ID
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
@@ -55,4 +60,4 @@ public class UserService {
             return false;
         }
     }
-} 
+}

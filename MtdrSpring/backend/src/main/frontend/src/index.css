@@ -6,15 +6,16 @@
 */
 body {
   background-color: #F5F5F5; /* Fondo gris claro */
-  width: 100%;
-  max-width: 50rem;
-  margin: 0 auto;
+  width: 100%; 
+  margin: 0; /* Quitado el margen auto */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
     "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Eliminada la restricción de ancho máximo: max-width: 50rem; */
 
 .App {
   background: #FFFFFF; /* Fondo blanco */
@@ -23,12 +24,12 @@ body {
   flex-direction: column;
   align-items: center;
   font-size: max(12px, min(2vw, 18px));
-  margin: 2rem 0 4rem 0;
+  margin: 0; /* Quitados los márgenes */
   padding: 1rem;
   position: relative;
-  box-shadow: 0 10px 18px 0 rgba(0, 0, 0, 0.1),
-    0 4.5rem 8rem 0 rgba(0, 0, 0, 0.05);
-  border-radius: 0.5rem;
+  box-shadow: none; /* Quitada la sombra global */
+  border-radius: 0; /* Quitado el borde redondeado */
+  width: 100%; /* Añadido ancho completo */
 }
 
 div#maincontent,

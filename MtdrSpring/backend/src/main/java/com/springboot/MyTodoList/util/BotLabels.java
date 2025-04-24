@@ -12,7 +12,8 @@ public enum BotLabels {
 	MY_TODO_LIST("MY TODO LIST"),
 	DASH("-"),
 	MY_ASSIGNED_ISSUES("/MyAssignedIssues"),
-	COMPLETE_ISSUE("/CompleteIssue");
+	COMPLETE_ISSUE("/CompleteIssue"),
+	DEVELOPER_STATS("/DevStats");
 
 	private String label;
 
