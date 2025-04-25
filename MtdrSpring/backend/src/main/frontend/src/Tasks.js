@@ -199,26 +199,28 @@ const Tasks = () => {
   };
 
   return (
-    <Box 
-      sx={{ 
+    <Box
+      sx={{
         p: { xs: 1, sm: 2, md: 3 },
         width: "100%",
         margin: "0",
       }}
     >
-      <Box sx={{ 
-        display: "flex", 
-        flexDirection: { xs: "column", sm: "row" },
-        justifyContent: "space-between", 
-        alignItems: { xs: "flex-start", sm: "center" },
-        mb: 3,
-        gap: 2
-      }}>
-        <Typography 
-          variant="h4" 
-          sx={{ 
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          justifyContent: "space-between",
+          alignItems: { xs: "flex-start", sm: "center" },
+          mb: 3,
+          gap: 2,
+        }}
+      >
+        <Typography
+          variant="h4"
+          sx={{
             color: "#312d2a",
-            fontSize: { xs: "1.5rem", sm: "2rem" } 
+            fontSize: { xs: "1.5rem", sm: "2rem" },
           }}
         >
           Backlog
@@ -231,7 +233,7 @@ const Tasks = () => {
             "&:hover": {
               backgroundColor: "#b13d2b",
             },
-            width: { xs: "100%", sm: "auto" }
+            width: { xs: "100%", sm: "auto" },
           }}
         >
           Add Task
@@ -243,30 +245,54 @@ const Tasks = () => {
           mt: 2,
           borderRadius: "16px",
           boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-          overflow: "auto",
-          width: "100%"
+          overflow: "hidden",
+          width: "100%",
         }}
       >
-        <TableContainer>
-          <Table sx={{ width: "100%" }}>
+        {/* Modified TableContainer to properly handle overflow */}
+        <TableContainer sx={{ width: "100%" }}>
+          <Table
+            sx={{
+              minWidth: 650, // Ensures table has a minimum width
+              width: "100%",
+            }}
+          >
             <TableHead>
               <TableRow>
-                <TableCell>Title</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Estimation</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Assignee</TableCell>
-                <TableCell>Team</TableCell>
-                <TableCell>Sprint</TableCell>
-                <TableCell align="center">Actions</TableCell>
+                <TableCell sx={{ width: "20%" }}>Title</TableCell>
+                <TableCell sx={{ width: "20%" }}>Description</TableCell>
+                <TableCell sx={{ width: "10%" }}>Type</TableCell>
+                <TableCell sx={{ width: "10%" }}>Estimation</TableCell>
+                <TableCell sx={{ width: "10%" }}>Status</TableCell>
+                <TableCell sx={{ width: "10%" }}>Assignee</TableCell>
+                <TableCell sx={{ width: "10%" }}>Team</TableCell>
+                <TableCell sx={{ width: "10%" }}>Sprint</TableCell>
+                <TableCell sx={{ width: "10%" }} align="center">
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {tasks.map((task) => (
                 <TableRow key={task.issueId}>
-                  <TableCell>{task.issueTitle}</TableCell>
-                  <TableCell>{task.issueDescription}</TableCell>
+                  <TableCell
+                    sx={{
+                      maxWidth: 150,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {task.issueTitle}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      maxWidth: 150,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {task.issueDescription}
+                  </TableCell>
                   <TableCell>{task.issueType}</TableCell>
                   <TableCell>{task.estimation}</TableCell>
                   <TableCell>
@@ -276,26 +302,66 @@ const Tasks = () => {
                       size="small"
                     />
                   </TableCell>
-                  <TableCell>
-                    {users.find((u) => u.userId === task.assignee)?.userName || "Unassigned"}
+                  <TableCell
+                    sx={{
+                      maxWidth: 100,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {users.find((u) => u.userId === task.assignee)?.userName ||
+                      "Unassigned"}
                   </TableCell>
-                  <TableCell>{task.team}</TableCell>
-                  <TableCell>
-                    {sprints.find((s) => s.idSprint === task.idSprint)?.sprintGoal || `Sprint ${task.idSprint}`}
+                  <TableCell
+                    sx={{
+                      maxWidth: 100,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {task.team}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      maxWidth: 100,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {sprints.find((s) => s.idSprint === task.idSprint)
+                      ?.sprintTitle || "No Sprint"}
                   </TableCell>
                   <TableCell align="center">
-                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        gap: 0.5,
+                      }}
+                    >
                       <IconButton
                         size="small"
-                        onClick={() => handleStatusToggle(task.issueId, task.status)}
+                        onClick={() =>
+                          handleStatusToggle(task.issueId, task.status)
+                        }
                         color={task.status === 1 ? "success" : "default"}
                       >
-                        {task.status === 1 ? <CheckCircleIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
+                        {task.status === 1 ? (
+                          <CheckCircleIcon fontSize="small" />
+                        ) : (
+                          <CancelIcon fontSize="small" />
+                        )}
                       </IconButton>
-                      <IconButton size="small" onClick={() => handleOpenDialog(task)}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenDialog(task)}
+                      >
                         <EditIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small" onClick={() => handleDelete(task.issueId)}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDelete(task.issueId)}
+                      >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Box>
@@ -520,9 +586,7 @@ const Tasks = () => {
                     </MenuItem>
                     {sprints.map((sprint) => (
                       <MenuItem key={sprint.idSprint} value={sprint.idSprint}>
-                        {`Sprint ${sprint.idSprint}: ${
-                          sprint.sprintGoal || "No goal"
-                        }`}
+                        {sprint.sprintTitle || `Sprint ${sprint.idSprint}`}
                       </MenuItem>
                     ))}
                   </Select>
