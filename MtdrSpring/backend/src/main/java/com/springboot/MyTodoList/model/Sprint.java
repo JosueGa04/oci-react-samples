@@ -20,6 +20,9 @@ public class Sprint {
     @Column(name = "SPRINT_GOAL", length = 4000)
     private String sprintGoal;
 
+    @Column(name = "SPRINT_TITLE")
+    private String sprintTitle;
+
     // Getters and Setters
     public Long getIdSprint() {
         return idSprint;
@@ -51,5 +54,13 @@ public class Sprint {
 
     public void setSprintGoal(String sprintGoal) {
         this.sprintGoal = sprintGoal;
+    }
+
+    public String getSprintTitle() {
+        return sprintTitle;
+    }
+
+    public void setSprintTitle(String sprintTitle) {
+        this.sprintTitle = sprintTitle;
     }
 }

@@ -36,6 +36,7 @@ const ISSUES_URL = "/issues";
 
 const SprintForm = ({ sprint, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
+    sprintTitle: "",
     sprintGoal: "",
     startDate: "",
     endDate: "",
@@ -51,6 +52,7 @@ const SprintForm = ({ sprint, onSubmit, onCancel }) => {
       };
 
       setFormData({
+        sprintTitle: sprint.sprintTitle || "",
         sprintGoal: sprint.sprintGoal || "",
         startDate: formatDate(sprint.startDate),
         endDate: formatDate(sprint.endDate),
@@ -65,6 +67,16 @@ const SprintForm = ({ sprint, onSubmit, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit}>
+      <TextField
+        fullWidth
+        label="Sprint Title"
+        value={formData.sprintTitle}
+        onChange={(e) =>
+          setFormData({ ...formData, sprintTitle: e.target.value })
+        }
+        margin="normal"
+        required
+      />
       <TextField
         fullWidth
         label="Sprint Goal"
@@ -283,7 +295,7 @@ const Sprints = () => {
         >
           {sprints.map((sprint) => (
             <MenuItem key={sprint.idSprint} value={sprint.idSprint}>
-              Sprint {sprint.idSprint}: {sprint.sprintGoal || "No goal"}
+              {sprint.sprintTitle || `Sprint ${sprint.idSprint}`}
             </MenuItem>
           ))}
         </Select>
@@ -303,6 +315,12 @@ const Sprints = () => {
               Sprint Details
             </Typography>
             <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="h5" sx={{ mb: 2 }}>
+                  {selectedSprint.sprintTitle ||
+                    `Sprint ${selectedSprint.idSprint}`}
+                </Typography>
+              </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography variant="body1">
                   <strong>Start Date:</strong>{" "}
