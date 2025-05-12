@@ -27,15 +27,18 @@ import {
 
 const API_URL = "/issues";
 const USERS_URL = "/users";
+const SPRINTS_URL = "/sprints";
 
 const Reports = () => {
   const [issues, setIssues] = useState([]);
   const [users, setUsers] = useState([]);
+  const [sprints, setSprints] = useState([]);
   const [currentTab, setCurrentTab] = useState(0);
 
   useEffect(() => {
     fetchIssues();
     fetchUsers();
+    fetchSprints();
   }, []);
 
   const fetchIssues = async () => {
@@ -58,9 +61,24 @@ const Reports = () => {
     }
   };
 
+  const fetchSprints = async () => {
+    try {
+      const response = await fetch(SPRINTS_URL);
+      const data = await response.json();
+      setSprints(data);
+    } catch (error) {
+      console.error("Error fetching sprints:", error);
+    }
+  };
+
   const getUserName = (userId) => {
     const user = users.find((u) => u.userId === userId);
     return user ? user.userName : "Unknown";
+  };
+
+  const getSprintTitle = (sprintId) => {
+    const sprint = sprints.find((s) => s.idSprint === sprintId);
+    return sprint ? sprint.sprintTitle : `Sprint ${sprintId}`;
   };
 
   const getCompletedTasksBySprint = () => {
@@ -69,10 +87,14 @@ const Reports = () => {
 
     completedTasks.forEach((task) => {
       if (!task.idSprint) return;
+      const sprint = sprints.find((s) => s.idSprint === task.idSprint);
       if (!tasksBySprint[task.idSprint]) {
-        tasksBySprint[task.idSprint] = [];
+        tasksBySprint[task.idSprint] = {
+          sprintTitle: sprint ? sprint.sprintTitle : `Sprint ${task.idSprint}`,
+          tasks: [],
+        };
       }
-      tasksBySprint[task.idSprint].push(task);
+      tasksBySprint[task.idSprint].tasks.push(task);
     });
 
     return tasksBySprint;
@@ -139,10 +161,10 @@ const Reports = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {Object.entries(tasksBySprint).map(([sprintId, tasks]) =>
-              tasks.map((task) => (
+            {Object.entries(tasksBySprint).map(([sprintId, sprintData]) =>
+              sprintData.tasks.map((task) => (
                 <TableRow key={task.issueId}>
-                  <TableCell>Sprint {sprintId}</TableCell>
+                  <TableCell>{sprintData.sprintTitle}</TableCell>
                   <TableCell>{task.issueTitle}</TableCell>
                   <TableCell>{getUserName(task.assignee)}</TableCell>
                   <TableCell>{task.estimation}</TableCell>
