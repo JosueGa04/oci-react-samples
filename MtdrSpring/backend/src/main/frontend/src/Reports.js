@@ -145,6 +145,25 @@ const Reports = () => {
     }));
   };
 
+  const getHoursPerSprint = () => {
+    const completedTasks = issues.filter((issue) => issue.status === 1);
+    const hoursBySprint = {};
+
+    completedTasks.forEach((task) => {
+      if (!task.idSprint) return;
+      const sprint = sprints.find((s) => s.idSprint === task.idSprint);
+      if (!hoursBySprint[task.idSprint]) {
+        hoursBySprint[task.idSprint] = {
+          sprintTitle: sprint ? sprint.sprintTitle : `Sprint ${task.idSprint}`,
+          totalHours: 0,
+        };
+      }
+      hoursBySprint[task.idSprint].totalHours += task.hoursWorked || 0;
+    });
+
+    return Object.values(hoursBySprint);
+  };
+
   const renderCompletedTasksTable = () => {
     const tasksBySprint = getCompletedTasksBySprint();
 
@@ -226,6 +245,25 @@ const Reports = () => {
     );
   };
 
+  const renderHoursPerSprint = () => {
+    const sprintData = getHoursPerSprint();
+
+    return (
+      <Box sx={{ height: 400 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={sprintData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="sprintTitle" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="totalHours" name="Total Hours" fill="#c74634" />
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
+    );
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" sx={{ mb: 3, color: "#312d2a" }}>
@@ -240,12 +278,14 @@ const Reports = () => {
         <Tab label="Completed Tasks by Sprint" />
         <Tab label="Team KPIs" />
         <Tab label="Individual KPIs" />
+        <Tab label="Hours per Sprint" />
       </Tabs>
 
       <Box sx={{ mt: 2 }}>
         {currentTab === 0 && renderCompletedTasksTable()}
         {currentTab === 1 && renderTeamKPIs()}
         {currentTab === 2 && renderIndividualKPIs()}
+        {currentTab === 3 && renderHoursPerSprint()}
       </Box>
     </Box>
   );
