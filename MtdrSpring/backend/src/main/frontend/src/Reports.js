@@ -29,6 +29,15 @@ const API_URL = "/issues";
 const USERS_URL = "/users";
 const SPRINTS_URL = "/sprints";
 
+const oracleColors = [
+  '#F80000', // Naranja
+  '#0072C6', // Azul
+  '#A4C8E1', // Verde
+  '#F6EB61', // Amarillo
+  '#D50000', // Rojo
+  '#A6A6A6', // Gris
+];
+
 const Reports = () => {
   const [issues, setIssues] = useState([]);
   const [users, setUsers] = useState([]);
@@ -164,6 +173,67 @@ const Reports = () => {
     return Object.values(hoursBySprint);
   };
 
+  const getHoursWorkedByDeveloperPerSprint = () => {
+    const completedTasks = issues.filter((issue) => issue.status === 1);
+    const hoursByDeveloper = {};
+
+    completedTasks.forEach((task) => {
+      if (!task.idSprint || !task.assignee) return;
+      const userName = getUserName(task.assignee);
+      const sprint = sprints.find((s) => s.idSprint === task.idSprint);
+      const sprintTitle = sprint ? sprint.sprintTitle : `Sprint ${task.idSprint}`;
+
+      if (!hoursByDeveloper[task.idSprint]) {
+        hoursByDeveloper[task.idSprint] = { sprintTitle, ...{} };
+      }
+      if (!hoursByDeveloper[task.idSprint][userName]) {
+        hoursByDeveloper[task.idSprint][userName] = 0;
+      }
+      hoursByDeveloper[task.idSprint][userName] += task.hoursWorked || 0;
+    });
+
+    return Object.entries(hoursByDeveloper).map(([sprintId, devHours]) => ({
+      sprintId,
+      sprintTitle: devHours.sprintTitle,
+      ...devHours,
+    }));
+  };
+
+  const getCompletedTasksByDeveloperPerSprint = () => {
+    const completedTasks = issues.filter((issue) => issue.status === 1);
+    const tasksByDeveloper = {};
+
+    completedTasks.forEach((task) => {
+      if (!task.idSprint || !task.assignee) return;
+      const userName = getUserName(task.assignee);
+      const sprint = sprints.find((s) => s.idSprint === task.idSprint);
+      const sprintTitle = sprint ? sprint.sprintTitle : `Sprint ${task.idSprint}`;
+
+      if (!tasksByDeveloper[task.idSprint]) {
+        tasksByDeveloper[task.idSprint] = { sprintTitle, ...{} };
+      }
+      if (!tasksByDeveloper[task.idSprint][userName]) {
+        tasksByDeveloper[task.idSprint][userName] = 0;
+      }
+      tasksByDeveloper[task.idSprint][userName] += 1; // Contar la tarea completada
+    });
+
+    return Object.entries(tasksByDeveloper).map(([sprintId, devTasks]) => ({
+      sprintId,
+      sprintTitle: devTasks.sprintTitle,
+      ...devTasks,
+    }));
+  };
+
+  const getColorPalette = (numColors) => {
+    const colors = [];
+    for (let i = 0; i < numColors; i++) {
+      const hue = (i * 360) / numColors; // Espaciado uniforme en el círculo de colores
+      colors.push(`hsl(${hue}, 70%, 50%)`); // Saturación y luminosidad ajustadas
+    }
+    return colors;
+  };
+
   const renderCompletedTasksTable = () => {
     const tasksBySprint = getCompletedTasksBySprint();
 
@@ -264,6 +334,56 @@ const Reports = () => {
     );
   };
 
+  const renderHoursWorkedByDeveloperPerSprint = () => {
+    const sprintData = getHoursWorkedByDeveloperPerSprint();
+    const developers = Object.keys(sprintData[0] || {}).filter(key => key !== 'sprintId' && key !== 'sprintTitle');
+    
+    // Usar los colores especificados
+    const colors = developers.map((_, index) => (index % 2 === 0 ? '#c74634' : '#312d2a'));
+
+    return (
+      <Box sx={{ height: 400 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={sprintData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="sprintTitle" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {developers.map((devName, index) => (
+              <Bar key={devName} dataKey={devName} name={devName} fill={colors[index]} />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
+    );
+  };
+
+  const renderCompletedTasksByDeveloperPerSprint = () => {
+    const sprintData = getCompletedTasksByDeveloperPerSprint();
+    const developers = Object.keys(sprintData[0] || {}).filter(key => key !== 'sprintId' && key !== 'sprintTitle');
+    
+    // Usar los colores especificados
+    const colors = developers.map((_, index) => (index % 2 === 0 ? '#c74634' : '#312d2a'));
+
+    return (
+      <Box sx={{ height: 400 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={sprintData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="sprintTitle" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {developers.map((devName, index) => (
+              <Bar key={devName} dataKey={devName} name={devName} fill={colors[index]} />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
+    );
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" sx={{ mb: 3, color: "#312d2a" }}>
@@ -279,6 +399,8 @@ const Reports = () => {
         <Tab label="Team KPIs" />
         <Tab label="Individual KPIs" />
         <Tab label="Hours per Sprint" />
+        <Tab label="Hours Worked by Developer per Sprint" />
+        <Tab label="Completed Tasks by Developer per Sprint" />
       </Tabs>
 
       <Box sx={{ mt: 2 }}>
@@ -286,6 +408,8 @@ const Reports = () => {
         {currentTab === 1 && renderTeamKPIs()}
         {currentTab === 2 && renderIndividualKPIs()}
         {currentTab === 3 && renderHoursPerSprint()}
+        {currentTab === 4 && renderHoursWorkedByDeveloperPerSprint()}
+        {currentTab === 5 && renderCompletedTasksByDeveloperPerSprint()}
       </Box>
     </Box>
   );
