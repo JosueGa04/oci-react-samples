@@ -13,7 +13,10 @@ public enum BotLabels {
 	DASH("-"),
 	MY_ASSIGNED_ISSUES("/MyAssignedIssues"),
 	COMPLETE_ISSUE("/CompleteIssue"),
-	DEVELOPER_STATS("/DevStats");
+	DEVELOPER_STATS("/DevStats"),
+	CREATE_NEW_TASK("/CreateTask"),
+	ASSIGN_TASK("/AssignTask"),
+	SHOW_DEVELOPERS("/ShowDevelopers");
 
 	private String label;
 
