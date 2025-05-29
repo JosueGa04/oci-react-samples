@@ -39,7 +39,3 @@ outputArtifacts:
   - name: Build_output_image
     type: DOCKER_IMAGE
     location: "${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}"
-
-  - name: kubernetesManifesting
-    type: GENERIC_ARTIFACT
-    location: todolistapp-springboot.yaml
