@@ -44,4 +44,4 @@ outputArtifacts:
 
   - name: oke_deploy_manifest
     type: BINARY
-    location: ${OCI_PRIMARY_SOURCE_DIR}/MtdrSpring/backend/todolist-springboot.yaml
+    location: ${OCI_PRIMARY_SOURCE_DIR}/MtdrSpring/backend/src/main/resourcestodolist-springboot.yaml
