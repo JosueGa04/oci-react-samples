@@ -1,47 +1,22 @@
 version: 0.1
 component: build
-timeoutInSeconds: 1800
-shell: bash
-
-env:
-  variables:
-    IMAGE_NAME: todolistapp-springboot
-    IMAGE_VERSION: 0.1
-    DOCKER_REGISTRY: "mx-queretaro-1.ocir.io/axcez6ydclsd/reacttodo/hviyu"
-  exportedVariables:
-    - BUILDRUN_HASH
 
 steps:
   - type: Command
-    name: "Generar hash de imagen"
-    command: |
-      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
-      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_PRIMARY_SOURCE_DIR/build_vars.env
-
-  - type: Command
-    name: "Build y push de la imagen con build.sh"
+    name: Run build.sh
     command: |
       cd MtdrSpring/backend
-      chmod +x build.sh
-      export DOCKER_REGISTRY=${DOCKER_REGISTRY}
+      chmod +x ./build.sh
       ./build.sh
 
   - type: Command
-    name: "Generar manifiesto de Kubernetes con deploy.sh"
+    name: Run deploy.sh
     command: |
       cd MtdrSpring/backend
-      chmod +x deploy.sh
-      export DOCKER_REGISTRY=${DOCKER_REGISTRY}
-      export TODO_PDB_NAME=dummy
-      export OCI_REGION=mx-queretaro-1
-      export UI_USERNAME=user1
+      chmod +x ./deploy.sh
       ./deploy.sh
 
 outputArtifacts:
-  - name: Build_output_image
+  - name: app-build-artifact
     type: DOCKER_IMAGE
-    location: "${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}"
-
-  - name: oke_deploy_manifest
-    type: BINARY
-    location: ${OCI_PRIMARY_SOURCE_DIR}/MtdrSpring/backend/src/main/resources/todolist-springboot.yaml
+    location: iad.ocir.io/axcez6ydclsd/reacttodo/hviyu/todolistapp-springboot:0.1
