@@ -16,7 +16,6 @@ steps:
     name: "Generar hash de imagen"
     command: |
       export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
-      echo "BUILDRUN_HASH: $BUILDRUN_HASH"
       echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_PRIMARY_SOURCE_DIR/build_vars.env
 
   - type: Command
@@ -36,18 +35,11 @@ steps:
       export UI_USERNAME=user1
       ./deploy.sh
 
-  - type: Command
-    name: "Verificar manifiesto generado"
-    command: |
-      ls -al todolistapp-springboot-*.yaml
-      export LATEST_MANIFEST=$(ls -t todolistapp-springboot-*.yaml | head -n1)
-      echo "MANIFEST_PATH=$LATEST_MANIFEST" >> $OCI_PRIMARY_SOURCE_DIR/build_vars.env
-
 outputArtifacts:
   - name: Build_output_image
     type: DOCKER_IMAGE
     location: "${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}"
 
   - name: kubernetesManifesting
-    type: KUBERNETES_MANIFEST
-    location: lab1-user1-oke-manifest
+    type: GENERIC_ARTIFACT
+    location: todolistapp-springboot.yaml
