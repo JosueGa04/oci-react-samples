@@ -21,6 +21,7 @@ steps:
   - type: Command
     name: "Build y push de la imagen con build.sh"
     command: |
+      cd MtdrSpring/backend
       chmod +x build.sh
       export DOCKER_REGISTRY=${DOCKER_REGISTRY}
       ./build.sh
@@ -28,12 +29,21 @@ steps:
   - type: Command
     name: "Generar manifiesto de Kubernetes con deploy.sh"
     command: |
+      cd MtdrSpring/backend
       chmod +x deploy.sh
       export DOCKER_REGISTRY=${DOCKER_REGISTRY}
       export TODO_PDB_NAME=dummy
       export OCI_REGION=mx-queretaro-1
       export UI_USERNAME=user1
       ./deploy.sh
+
+  - type: Command
+    name: "Copiar manifiesto generado como artifact"
+    command: |
+      cd MtdrSpring/backend
+      export LAST_MANIFEST=$(ls -t todolistapp-springboot-*.yaml | head -n1)
+      mkdir -p ../../artifacts
+      cp $LAST_MANIFEST ../../artifacts/manifesto.yaml
 
 outputArtifacts:
   - name: Build_output_image
