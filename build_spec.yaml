@@ -1,41 +1,53 @@
 version: 0.1
 component: build
-timeoutInSeconds: 1200
+timeoutInSeconds: 1800
 shell: bash
+
 env:
   variables:
     IMAGE_NAME: todolistapp-springboot
     IMAGE_VERSION: 0.1
-    DOCKER_REGISTRY: mx-queretaro-1.ocir.io/axcez6ydclsd/reacttodo/hviyu
+    DOCKER_REGISTRY: "mx-queretaro-1.ocir.io/axcez6ydclsd/reacttodo/hviyu"
   exportedVariables:
     - BUILDRUN_HASH
+
 steps:
   - type: Command
-    name: "Define unique image tag"
+    name: "Generar hash de imagen"
     command: |
-      echo "OCI_BUILD_RUN_ID: ${OCI_BUILD_RUN_ID}"
       export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
       echo "BUILDRUN_HASH: $BUILDRUN_HASH"
-      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_PRIMARY_SOURCE_DIR/build_env_vars.sh
+      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_PRIMARY_SOURCE_DIR/build_vars.env
 
   - type: Command
-    name: "Build and Push Docker Image"
+    name: "Build y push de la imagen con build.sh"
     command: |
-      source ./build_env_vars.sh
-      export IMAGE=${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILDRUN_HASH}
-      echo "Building and pushing image: $IMAGE"
-      mvn clean package spring-boot:repackage
-      docker build -f Dockerfile -t $IMAGE .
-      docker push $IMAGE
+      chmod +x build.sh
+      export DOCKER_REGISTRY=${DOCKER_REGISTRY}
+      ./build.sh
 
   - type: Command
-    name: "Remove local image"
+    name: "Generar manifiesto de Kubernetes con deploy.sh"
     command: |
-      source ./build_env_vars.sh
-      export IMAGE=${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILDRUN_HASH}
-      docker rmi "$IMAGE"
+      chmod +x deploy.sh
+      export DOCKER_REGISTRY=${DOCKER_REGISTRY}
+      export TODO_PDB_NAME=dummy
+      export OCI_REGION=mx-queretaro-1
+      export UI_USERNAME=user1
+      ./deploy.sh
+
+  - type: Command
+    name: "Verificar manifiesto generado"
+    command: |
+      ls -al todolistapp-springboot-*.yaml
+      export LATEST_MANIFEST=$(ls -t todolistapp-springboot-*.yaml | head -n1)
+      echo "MANIFEST_PATH=$LATEST_MANIFEST" >> $OCI_PRIMARY_SOURCE_DIR/build_vars.env
 
 outputArtifacts:
   - name: Build_output_image
     type: DOCKER_IMAGE
-    location: mx-queretaro-1.ocir.io/axcez6ydclsd/reacttodo/hviyu/todolistapp-springboot
+    location: "${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}"
+
+  - name: kubernetesManifesting
+    type: KUBERNETES_MANIFEST
+    location: lab1-user1-oke-manifest
