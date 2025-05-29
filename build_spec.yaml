@@ -1,10 +1,41 @@
 version: 0.1
 component: build
-timeoutInSeconds: 600
+timeoutInSeconds: 1200
 shell: bash
+env:
+  variables:
+    IMAGE_NAME: todolistapp-springboot
+    IMAGE_VERSION: 0.1
+    DOCKER_REGISTRY: mx-queretaro-1.ocir.io/axcez6ydclsd/reacttodo/hviyu
+  exportedVariables:
+    - BUILDRUN_HASH
 steps:
   - type: Command
-    name: "Build script"
+    name: "Define unique image tag"
     command: |
-      chmod +x build.sh
-      ./build.sh
+      echo "OCI_BUILD_RUN_ID: ${OCI_BUILD_RUN_ID}"
+      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
+      echo "BUILDRUN_HASH: $BUILDRUN_HASH"
+      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_PRIMARY_SOURCE_DIR/build_env_vars.sh
+
+  - type: Command
+    name: "Build and Push Docker Image"
+    command: |
+      source ./build_env_vars.sh
+      export IMAGE=${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILDRUN_HASH}
+      echo "Building and pushing image: $IMAGE"
+      mvn clean package spring-boot:repackage
+      docker build -f Dockerfile -t $IMAGE .
+      docker push $IMAGE
+
+  - type: Command
+    name: "Remove local image"
+    command: |
+      source ./build_env_vars.sh
+      export IMAGE=${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILDRUN_HASH}
+      docker rmi "$IMAGE"
+
+outputArtifacts:
+  - name: Build_output_image
+    type: DOCKER_IMAGE
+    location: mx-queretaro-1.ocir.io/axcez6ydclsd/reacttodo/hviyu/todolistapp-springboot
