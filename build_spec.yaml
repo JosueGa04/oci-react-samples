@@ -1,22 +1,72 @@
 version: 0.1
 component: build
+timeoutInSeconds: 6000
+runAs: root
+shell: bash
+
+env:
+  variables:
+    IMAGE_NAME: todolistapp-springboot
+    IMAGE_VERSION: 0.1
+  vaultVariables: {}
+  exportedVariables:
+    - BUILDRUN_HASH
 
 steps:
   - type: Command
-    name: Run build.sh
+    name: "Generate image tag from OCI_BUILD_RUN_ID"
+    timeoutInSeconds: 40
     command: |
-      cd MtdrSpring/backend
-      chmod +x ./build.sh
-      ./build.sh
+      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
+      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_DATA_OUT_DIR/build_env_vars
+      echo "BUILDRUN_HASH: $BUILDRUN_HASH"
 
   - type: Command
-    name: Run deploy.sh
+    name: "Retrieve environment variables from system"
+    timeoutInSeconds: 60
     command: |
-      cd MtdrSpring/backend
-      chmod +x ./deploy.sh
-      ./deploy.sh
+      export DOCKER_REGISTRY=$(state_get DOCKER_REGISTRY)
+      export TODO_PDB_NAME=$(state_get MTDR_DB_NAME)
+      export OCI_REGION=$(state_get REGION)
+      export UI_USERNAME=$(state_get UI_USERNAME)
+      echo "DOCKER_REGISTRY=$DOCKER_REGISTRY"
+      echo "TODO_PDB_NAME=$TODO_PDB_NAME"
+      echo "OCI_REGION=$OCI_REGION"
+      echo "UI_USERNAME=$UI_USERNAME"
+
+  - type: Command
+    name: "Build and push Docker image"
+    timeoutInSeconds: 1200
+    command: |
+      cd ${OCI_PRIMARY_SOURCE_DIR}
+      export IMAGE=${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILDRUN_HASH}
+      mvn clean package spring-boot:repackage
+      docker build -f Dockerfile -t $IMAGE .
+      docker push $IMAGE
+      if [ $? -eq 0 ]; then
+        docker rmi "$IMAGE"
+      fi
+
+  - type: Command
+    name: "Generate Kubernetes deployment YAML"
+    timeoutInSeconds: 300
+    command: |
+      export CURRENTTIME=$(date '+%F_%H-%M-%S')
+      cp src/main/resources/todolistapp-springboot.yaml todolistapp-springboot-$CURRENTTIME.yaml
+
+      sed -i "s|%DOCKER_REGISTRY%|${DOCKER_REGISTRY}|g" todolistapp-springboot-$CURRENTTIME.yaml
+      sed -i "s|%TODO_PDB_NAME%|${TODO_PDB_NAME}|g" todolistapp-springboot-$CURRENTTIME.yaml
+      sed -i "s|%OCI_REGION%|${OCI_REGION}|g" todolistapp-springboot-$CURRENTTIME.yaml
+      sed -i "s|%UI_USERNAME%|${UI_USERNAME}|g" todolistapp-springboot-$CURRENTTIME.yaml
+      sed -i "s|\${BUILDRUN_HASH}|${BUILDRUN_HASH}|g" todolistapp-springboot-$CURRENTTIME.yaml
+
+      mv todolistapp-springboot-$CURRENTTIME.yaml deployment.yaml
 
 outputArtifacts:
-  - name: app-build-artifact
+  - name: todolistapp_image
     type: DOCKER_IMAGE
-    location: iad.ocir.io/axcez6ydclsd/reacttodo/hviyu/todolistapp-springboot:0.1
+    location: ${DOCKER_REGISTRY}/todolistapp-springboot:${BUILDRUN_HASH}
+
+  - name: todolistapp_deploy_manifest
+    type: BINARY
+    location: ${OCI_PRIMARY_SOURCE_DIR}/deployment.yaml
