@@ -6,42 +6,32 @@ shell: bash
 env:
   variables:
     REGISTRY: mx-queretaro-1.ocir.io
-    NAMESPACE: axcez6ydclsd/reacttodo/hviyu
-    REPO: todolistapp-springboot
+    NAMESPACE: axcez6ydclsd
+    REPO: reacttodo/hviyu/todolistapp-springboot
   exportedVariables:
     - BUILDRUN_HASH
-    - IMAGE_TAG
 
 steps:
   - type: Command
-    name: Define unique tag
+    name: 🔑 Definir hash único
     command: |
       echo "OCI_BUILD_RUN_ID: ${OCI_BUILD_RUN_ID}"
       export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
-      export IMAGE_TAG=$BUILDRUN_HASH
       echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_OUTPUT_DIR/build_vars
-      echo "IMAGE_TAG=$IMAGE_TAG" >> $OCI_OUTPUT_DIR/build_vars
 
   - type: Command
-    name: Login to OCIR
+    name: 🔐 Login a OCIR
     command: |
-      echo "🔐 Autenticando en OCIR..."
       echo "${auth_token_ocir}" | docker login $REGISTRY -u "${user_ocir}" --password-stdin
 
   - type: Command
-    name: Build & Push
+    name: 🛠️ Build y Push de imagen Spring Boot
     command: |
-      echo "📦 Empaquetando JAR con Maven..."
       cd MtdrSpring/backend
-      mvn clean package -DskipTests
-
-      echo "🐳 Construyendo imagen Docker..."
       docker build -t $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH} .
-
-      echo "🚀 Pusheando imagen a OCIR..."
       docker push $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH}
 
 outputArtifacts:
   - name: todolist-image
     type: DOCKER_IMAGE
-    location: ${REGISTRY}/${NAMESPACE}/${REPO}:${IMAGE_TAG}
+    location: ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
