@@ -11,8 +11,8 @@ env:
     MTDR_DB_NAME: mtdrdb
     REGION: mx-queretaro-1
     UI_USERNAME: usuario_backend
-exportedVariables:
-  - BUILDRUN_HASH
+  exportedVariables:
+    - BUILDRUN_HASH
 
 steps:
   - type: Command
