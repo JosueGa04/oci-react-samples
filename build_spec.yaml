@@ -9,7 +9,7 @@ env:
     NAMESPACE: axcez6ydclsd
     REPO: reacttodo/hviyu/todolistapp-springboot 
 exportedVariables:
-    - BUILDRUN-HASH
+    - BUILDRUN_HASH
 
 steps:
   - type: Command
@@ -24,24 +24,24 @@ steps:
     name: "Define unique image tag"
     timeoutInSeconds: 40
     command: |
-      export BUILDRUN-HASH=`echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7`
-      echo "BUILDRUN-HASH: " $BUILDRUN-HASH
+      export BUILDRUN_HASH=`echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7`
+      echo "BUILDRUN_HASH: " $BUILDRUN_HASH
   - type: Command
     name: Build & Push multi-stage (no cache, pull base + prev image)
     command: |
       cd MtdrSpring/backend
       
-      docker pull ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN-HASH} || true
+      docker pull ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} || true
 
       docker build --pull --no-cache \
         -f Dockerfile \
-        -t ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN-HASH} \
+        -t ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} \
         .
 
       # 3) push siempre sobre 'latest'
-      docker push ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN-HASH}
+      docker push ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
 
 outputArtifacts:
   - name: todolist-image
     type: DOCKER_IMAGE
-    location: ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN-HASH}
+    location: ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
