@@ -30,6 +30,14 @@ steps:
       test -f MtdrSpring/backend/pom.xml && echo "✅ pom.xml encontrado" || echo "❌ pom.xml NO encontrado"
 
   - type: Command
+    name: Diagnóstico: estructura de repo
+    command: |
+      echo "📁 Explorando estructura del repo completo:"
+      find . -type f -name "pom.xml"
+      echo "Contenido completo del repositorio:"
+      tree -L 3 || find . | head -n 100
+
+  - type: Command
     name: Login to OCIR
     command: |
       echo "🔑 Autenticando en OCIR..."
