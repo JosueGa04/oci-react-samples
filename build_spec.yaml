@@ -14,6 +14,19 @@ env:
 
 steps:
   - type: Command
+    name: ⚙️ Instalar y Configurar Java 11 (o más reciente, ej. GraalVM JDK 17)
+    command: |
+      # Instalar GraalVM JDK 17 (recomendado para versiones más recientes de Java)
+      # Para JDK 11, se podría usar 'graalvm-java11-jdk' si está disponible, o un paquete específico de GraalVM 11.
+      # Verificar los repositorios YUM de OCI para los nombres exactos de los paquetes si 'graalvm-17-native-image' no es el deseado.
+      yum -y install graalvm-17-native-image
+      export JAVA_HOME="/usr/lib64/graalvm/graalvm-java17" # Ajustar la ruta según la instalación real
+      export PATH="${JAVA_HOME}/bin:$PATH"
+      echo "JAVA_HOME=${JAVA_HOME}" >> $OCI_BUILD_RUN_EXPORT_FILE
+      echo "PATH=${PATH}" >> $OCI_BUILD_RUN_EXPORT_FILE
+      java -version # Verificar la versión de Java instalada
+
+  - type: Command
     name: 🔧 Compilar el proyecto Spring Boot (Maven)
     command: |
       cd MtdrSpring/backend
