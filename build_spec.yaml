@@ -8,46 +8,35 @@ env:
     REGISTRY: mx-queretaro-1.ocir.io
     NAMESPACE: axcez6ydclsd
     REPO: reacttodo/hviyu/todolistapp-springboot
+    DOCKERHUB_USER: josuega04
+    DOCKERHUB_TOKEN: Welcome26?
   exportedVariables:
     - BUILDRUN_HASH
 
 steps:
   - type: Command
-    name: Login to OCIR
+    name: 🔑 Definir hash único
     command: |
-      echo "🔑 Autenticando en OCIR..."
-      echo "${auth_token_ocir}" \
-        | docker login $REGISTRY \
-            -u "${user_ocir}" \
-            --password-stdin
-
-  - type: Command
-    name: "Define unique image tag"
-    timeoutInSeconds: 40
-    command: |
+      echo "OCI_BUILD_RUN_ID: ${OCI_BUILD_RUN_ID}"
       export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
-      echo "BUILDRUN_HASH: $BUILDRUN_HASH"
-      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_DATA_OUT_DIR/build_env_vars
-      
-  - type: Command
-    name: Build JAR with Maven + Repackage
-    command: |
-      cd MtdrSpring/backend
-      mvn clean package spring-boot:repackage
+      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_OUTPUT_DIR/build_vars
 
   - type: Command
-    name: Build & Push Docker Image
+    name: 🔐 Login a OCIR
     command: |
-      echo "🚀 Construyendo imagen Docker y subiéndola..."
+      echo "${auth_token_ocir}" | docker login $REGISTRY -u "${user_ocir}" --password-stdin
+
+  - type: Command
+    name: 🔐 Login a Docker Hub
+    command: |
+      echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
+
+  - type: Command
+    name: 🛠️ Build y Push de imagen Spring Boot
+    command: |
       cd MtdrSpring/backend
-
-      docker pull ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} || true
-
-      docker build --pull --no-cache \
-        -f Dockerfile \
-        -t ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} .
-
-      docker push ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
+      docker build -t $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH} .
+      docker push $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH}
 
 outputArtifacts:
   - name: todolist-image
