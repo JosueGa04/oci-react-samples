@@ -13,6 +13,23 @@ env:
 
 steps:
   - type: Command
+    name: Verificar entorno base
+    command: |
+      echo "🧪 Verificando versiones de herramientas..."
+      docker --version || echo "Docker no está instalado"
+      mvn -v || echo "Maven no está instalado"
+      java -version || echo "Java no está instalado"
+      echo "Ruta actual de trabajo: $(pwd)"
+      echo "Contenido del directorio actual:"
+      ls -la
+      echo "Contenido de MtdrSpring:"
+      ls -la MtdrSpring || echo "No existe MtdrSpring"
+      echo "Contenido de MtdrSpring/backend:"
+      ls -la MtdrSpring/backend || echo "No existe MtdrSpring/backend"
+      echo "¿Existe el pom.xml?"
+      test -f MtdrSpring/backend/pom.xml && echo "✅ pom.xml encontrado" || echo "❌ pom.xml NO encontrado"
+
+  - type: Command
     name: Login to OCIR
     command: |
       echo "🔑 Autenticando en OCIR..."
@@ -22,16 +39,17 @@ steps:
             --password-stdin
 
   - type: Command
-    name: "Define unique image tag"
+    name: Define unique image tag
     timeoutInSeconds: 40
     command: |
       export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
       echo "BUILDRUN_HASH: $BUILDRUN_HASH"
       echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_DATA_OUT_DIR/build_env_vars
-      
+
   - type: Command
     name: Build JAR with Maven + Repackage
     command: |
+      echo "📦 Construyendo JAR..."
       cd MtdrSpring/backend
       mvn clean package spring-boot:repackage
 
@@ -41,12 +59,14 @@ steps:
       echo "🚀 Construyendo imagen Docker y subiéndola..."
       cd MtdrSpring/backend
 
+      echo "Intentando hacer pull de imagen previa (si existe)..."
       docker pull ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} || true
 
       docker build --pull --no-cache \
         -f Dockerfile \
         -t ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} .
 
+      echo "Subiendo imagen a OCIR..."
       docker push ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
 
 outputArtifacts:
