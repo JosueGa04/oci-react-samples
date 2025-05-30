@@ -6,14 +6,13 @@ shell: bash
 env:
   variables:
     JAVA_HOME: /usr/lib64/graalvm/graalvm22-ee-java17
-    PATH: /usr/lib64/graalvm/graalvm22-ee-java17/bin:$PATH
 
   exportedVariables:
     - BuildServiceDemoVersion
 
 steps:
   - type: Command
-    name: "Instalar GraalVM Native Image"
+    name: "Instalar GraalVM Native Image y kubectl"
     command: |
       yum -y install graalvm22-ee-17-native-image
       yum -y install kubectl
@@ -32,6 +31,7 @@ steps:
     command: |
       cd MtdrSpring
       source env.sh
+      export PATH=$JAVA_HOME/bin:$PATH
       cd backend
       chmod +x build.sh
       ./build.sh
