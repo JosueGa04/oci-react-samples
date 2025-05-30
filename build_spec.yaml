@@ -30,7 +30,7 @@ steps:
       test -f MtdrSpring/backend/pom.xml && echo "✅ pom.xml encontrado" || echo "❌ pom.xml NO encontrado"
 
   - type: Command
-    name: Diagnóstico: estructura de repo
+    name: Diagnostic
     command: |
       echo "📁 Explorando estructura del repo completo:"
       find . -type f -name "pom.xml"
