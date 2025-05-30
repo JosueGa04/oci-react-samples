@@ -1,23 +1,72 @@
 version: 0.1
 component: build
 timeoutInSeconds: 3600
-shell: bash
+
+env:
+  variables:
+    REGISTRY: mx-queretaro-1.ocir.io
+    NAMESPACE: axcez6ydclsd/reacttodo/hviyu
+    REPO: todolistapp-springboot
+    DOCKER_REGISTRY: mx-queretaro-1.ocir.io/axcez6ydclsd/reacttodo/hviyu/todolistapp-springboot
+    MTDR_DB_NAME: mtdrdb
+    REGION: mx-queretaro-1
+    UI_USERNAME: usuario_backend
+exportedVariables:
+  - BUILDRUN_HASH
 
 steps:
   - type: Command
-    name: 📁 Diagnóstico de estructura del repositorio
+    name: 🔑 Login a OCIR
     command: |
-      echo "Explorando estructura..."
-      find .
+      echo "Iniciando login en OCIR..."
+      echo "${auth_token_ocir}" \
+        | docker login $REGISTRY \
+            -u "${user_ocir}" \
+            --password-stdin
 
   - type: Command
-    name: 🛠️ Construcción del backend
+    name: 🏷️ Definir tag único de imagen
+    timeoutInSeconds: 40
     command: |
-      chmod +x ./MtdrSpring/backend/build.sh
-      ./MtdrSpring/backend/build.sh
+      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
+      echo "BUILDRUN_HASH: $BUILDRUN_HASH"
 
   - type: Command
-    name: 🚀 Despliegue del backend
+    name: 🛠️ Build y Push de imagen Spring Boot
     command: |
-      chmod +x ./MtdrSpring/backend/deploy.sh
+      cd MtdrSpring/backend
+      
+      echo "Verificando si existe imagen previa..."
+      docker pull ${DOCKER_REGISTRY}:${BUILDRUN_HASH} || true
+
+      echo "Construyendo imagen..."
+      docker build --pull --no-cache \
+        -f Dockerfile \
+        -t ${DOCKER_REGISTRY}:${BUILDRUN_HASH} \
+        .
+
+      echo "Publicando imagen..."
+      docker push ${DOCKER_REGISTRY}:${BUILDRUN_HASH}
+
+  - type: Command
+    name: 🚀 Despliegue con deploy.sh
+    command: |
+      echo "Simulando state_get..."
+      function state_get() {
+        case "$1" in
+          DOCKER_REGISTRY) echo "$DOCKER_REGISTRY" ;;
+          MTDR_DB_NAME) echo "$MTDR_DB_NAME" ;;
+          REGION) echo "$REGION" ;;
+          UI_USERNAME) echo "$UI_USERNAME" ;;
+          *) echo "" ;;
+        esac
+      }
+
+      export -f state_get
+      chmod +x MtdrSpring/backend/deploy.sh
       ./MtdrSpring/backend/deploy.sh
+
+outputArtifacts:
+  - name: todolist-image
+    type: DOCKER_IMAGE
+    location: ${DOCKER_REGISTRY}:${BUILDRUN_HASH}
