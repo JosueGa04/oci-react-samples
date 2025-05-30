@@ -8,7 +8,7 @@ env:
     REGISTRY: mx-queretaro-1.ocir.io
     NAMESPACE: axcez6ydclsd
     REPO: reacttodo/hviyu/todolistapp-springboot 
-exportedVariables:
+  exportedVariables:
     - BUILDRUN_HASH
 
 steps:
