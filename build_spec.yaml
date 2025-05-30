@@ -13,29 +13,12 @@ env:
 
 steps:
   - type: Command
-    name: Verificar entorno base
-    command: |
-      echo "🧪 Verificando versiones de herramientas..."
-      docker --version || echo "Docker no está instalado"
-      mvn -v || echo "Maven no está instalado"
-      java -version || echo "Java no está instalado"
-      echo "Ruta actual de trabajo: $(pwd)"
-      echo "Contenido del directorio actual:"
-      ls -la
-      echo "Contenido de MtdrSpring:"
-      ls -la MtdrSpring || echo "No existe MtdrSpring"
-      echo "Contenido de MtdrSpring/backend:"
-      ls -la MtdrSpring/backend || echo "No existe MtdrSpring/backend"
-      echo "¿Existe el pom.xml?"
-      test -f MtdrSpring/backend/pom.xml && echo "✅ pom.xml encontrado" || echo "❌ pom.xml NO encontrado"
-
-  - type: Command
-    name: Diagnostic
+    name: "Diagnostico estructura del repo"
     command: |
       echo "📁 Explorando estructura del repo completo:"
       find . -type f -name "pom.xml"
-      echo "Contenido completo del repositorio:"
-      tree -L 3 || find . | head -n 100
+      echo "Contenido completo del repositorio (limitado a 3 niveles):"
+      command -v tree && tree -L 3 || find . | head -n 100
 
   - type: Command
     name: Login to OCIR
@@ -57,24 +40,31 @@ steps:
   - type: Command
     name: Build JAR with Maven + Repackage
     command: |
-      echo "📦 Construyendo JAR..."
-      cd MtdrSpring/backend
+      echo "📦 Construyendo JAR con Maven..."
+      cd backend
       mvn clean package spring-boot:repackage
+
+  - type: Command
+    name: Verificar JAR generado
+    command: |
+      echo "🔍 Verificando JAR generado..."
+      ls -lh backend/target/*.jar || echo "❌ No se generó ningún JAR en backend/target"
 
   - type: Command
     name: Build & Push Docker Image
     command: |
       echo "🚀 Construyendo imagen Docker y subiéndola..."
-      cd MtdrSpring/backend
+      cd backend
 
       echo "Intentando hacer pull de imagen previa (si existe)..."
       docker pull ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} || true
 
+      echo "🔧 Ejecutando Docker Build..."
       docker build --pull --no-cache \
         -f Dockerfile \
         -t ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} .
 
-      echo "Subiendo imagen a OCIR..."
+      echo "📤 Subiendo imagen a OCIR..."
       docker push ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
 
 outputArtifacts:
