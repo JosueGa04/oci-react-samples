@@ -8,6 +8,8 @@ env:
     REGISTRY: mx-queretaro-1.ocir.io
     NAMESPACE: axcez6ydclsd
     REPO: reacttodo/hviyu/todolistapp-springboot
+    DOCKERHUB_USER: axcez6ydclsd/a01637983@tec.mx
+    DOCKERHUB_TOKEN: w62F8TpFa_)EvbuoS-J#
   exportedVariables:
     - BUILDRUN_HASH
 
@@ -23,6 +25,11 @@ steps:
     name: 🔐 Login a OCIR
     command: |
       echo "${auth_token_ocir}" | docker login $REGISTRY -u "${user_ocir}" --password-stdin
+
+  - type: Command
+    name: 🔐 Login a Docker Hub
+    command: |
+      echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
 
   - type: Command
     name: 🛠️ Build y Push de imagen Spring Boot
