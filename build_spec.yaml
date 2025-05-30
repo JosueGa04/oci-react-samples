@@ -1,13 +1,13 @@
 version: 0.1
 component: build
-
 timeoutInSeconds: 3600
+shell: bash
 
 env:
   variables:
     REGISTRY: mx-queretaro-1.ocir.io
     NAMESPACE: axcez6ydclsd
-    REPO: reacttodo/hviyu/todolistapp-springboot 
+    REPO: reacttodo/hviyu/todolistapp-springboot
   exportedVariables:
     - BUILDRUN_HASH
 
@@ -20,25 +20,34 @@ steps:
         | docker login $REGISTRY \
             -u "${user_ocir}" \
             --password-stdin
+
   - type: Command
     name: "Define unique image tag"
     timeoutInSeconds: 40
     command: |
-      export BUILDRUN_HASH=`echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7`
-      echo "BUILDRUN_HASH: " $BUILDRUN_HASH
+      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
+      echo "BUILDRUN_HASH: $BUILDRUN_HASH"
+      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_DATA_OUT_DIR/build_env_vars
+
   - type: Command
-    name: Build & Push multi-stage (no cache, pull base + prev image)
+    name: Build JAR with Maven
     command: |
+      echo "📦 Compilando el proyecto Spring Boot..."
       cd MtdrSpring/backend
-      
+      mvn clean package
+
+  - type: Command
+    name: Build & Push Docker Image
+    command: |
+      echo "🚀 Construyendo imagen Docker y subiéndola..."
+      cd MtdrSpring/backend
+
       docker pull ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} || true
 
       docker build --pull --no-cache \
         -f Dockerfile \
-        -t ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} \
-        .
+        -t ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} .
 
-      # 3) push siempre sobre 'latest'
       docker push ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
 
 outputArtifacts:
