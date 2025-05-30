@@ -8,6 +8,11 @@ env:
   variables:
     IMAGE_NAME: todolistapp-springboot
     IMAGE_VERSION: 0.1
+    DOCKER_REGISTRY: mx-queretaro-1.ocir.io/axcez6ydclsd
+    TODO_PDB_NAME: reactivohviyu
+    REGION_OCI: mx-queretaro-1
+    UI_USERNAME: admin  # cambia si es otro
+
   vaultVariables: {}
   exportedVariables:
     - BUILDRUN_HASH
@@ -20,19 +25,6 @@ steps:
       export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
       echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_DATA_OUT_DIR/build_env_vars
       echo "BUILDRUN_HASH: $BUILDRUN_HASH"
-
-  - type: Command
-    name: "Retrieve environment variables from system"
-    timeoutInSeconds: 60
-    command: |
-      export DOCKER_REGISTRY=$(state_get DOCKER_REGISTRY)
-      export TODO_PDB_NAME=$(state_get MTDR_DB_NAME)
-      export OCI_REGION=$(state_get REGION)
-      export UI_USERNAME=$(state_get UI_USERNAME)
-      echo "DOCKER_REGISTRY=$DOCKER_REGISTRY"
-      echo "TODO_PDB_NAME=$TODO_PDB_NAME"
-      echo "OCI_REGION=$OCI_REGION"
-      echo "UI_USERNAME=$UI_USERNAME"
 
   - type: Command
     name: "Build and push Docker image"
@@ -52,11 +44,11 @@ steps:
     timeoutInSeconds: 300
     command: |
       export CURRENTTIME=$(date '+%F_%H-%M-%S')
-      cp src/main/resources/todolistapp-springboot.yaml todolistapp-springboot-$CURRENTTIME.yaml
+      cp todolistapp-springboot.yaml todolistapp-springboot-$CURRENTTIME.yaml
 
       sed -i "s|%DOCKER_REGISTRY%|${DOCKER_REGISTRY}|g" todolistapp-springboot-$CURRENTTIME.yaml
       sed -i "s|%TODO_PDB_NAME%|${TODO_PDB_NAME}|g" todolistapp-springboot-$CURRENTTIME.yaml
-      sed -i "s|%OCI_REGION%|${OCI_REGION}|g" todolistapp-springboot-$CURRENTTIME.yaml
+      sed -i "s|%REGION_OCI%|${REGION_OCI}|g" todolistapp-springboot-$CURRENTTIME.yaml
       sed -i "s|%UI_USERNAME%|${UI_USERNAME}|g" todolistapp-springboot-$CURRENTTIME.yaml
       sed -i "s|\${BUILDRUN_HASH}|${BUILDRUN_HASH}|g" todolistapp-springboot-$CURRENTTIME.yaml
 
