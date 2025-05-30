@@ -9,7 +9,7 @@ COPY src /tmp/src/
 WORKDIR /tmp/
 
 # Construir el proyecto con cache de dependencias
-RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 # Etapa de ejecución (Run)
 FROM openjdk:11-jre-slim
