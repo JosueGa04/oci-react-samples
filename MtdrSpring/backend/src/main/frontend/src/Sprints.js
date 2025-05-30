@@ -312,7 +312,7 @@ const Sprints = () => {
             }}
           >
             <Typography variant="h6" sx={{ mb: 2 }}>
-              Sprint Details
+              Sprint Detalle
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
