@@ -2,7 +2,6 @@ version: 0.1
 component: build
 timeoutInSeconds: 3600
 shell: bash
-
 env:
   variables:
     REGISTRY: mx-queretaro-1.ocir.io
@@ -10,9 +9,9 @@ env:
     REPO: reacttodo/hviyu/todolistapp-springboot
     DOCKERHUB_USER: josuega04
     DOCKERHUB_TOKEN: Welcome26?
+    KUBE_NAMESPACE: mtdrworkshop
   exportedVariables:
     - BUILDRUN_HASH
-
 steps:
   - type: Command
     name: 🔑 Definir hash único
@@ -20,23 +19,64 @@ steps:
       echo "OCI_BUILD_RUN_ID: ${OCI_BUILD_RUN_ID}"
       export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
       echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_OUTPUT_DIR/build_vars
-
+      
   - type: Command
     name: 🔐 Login a OCIR
     command: |
       echo "${auth_token_ocir}" | docker login $REGISTRY -u "${user_ocir}" --password-stdin
-
+      
   - type: Command
     name: 🔐 Login a Docker Hub
     command: |
       echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
-
+      
   - type: Command
     name: 🛠️ Build y Push de imagen Spring Boot
     command: |
       cd MtdrSpring/backend
       docker build -t $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH} .
       docker push $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH}
+      
+  - type: Command
+    name: 🔧 Verificar conexión a Kubernetes
+    command: |
+      kubectl cluster-info
+      kubectl get namespaces
+      
+  - type: Command
+    name: 🔍 Verificar secretos en namespace
+    command: |
+      kubectl get secrets -n ${KUBE_NAMESPACE}
+      
+  - type: Command
+    name: 🚀 Deploy/Update en Kubernetes
+    command: |
+      # Si es la primera vez, aplicar el manifest completo
+      if ! kubectl get deployment todolistapp-springboot-deployment -n ${KUBE_NAMESPACE} >/dev/null 2>&1; then
+        echo "Deployment no existe, creando nuevo..."
+        # Procesar el manifest con la nueva imagen
+        sed "s|\${BUILDRUN_HASH}|${BUILDRUN_HASH}|g" kubernetes/manifest.yaml > kubernetes-processed.yaml
+        kubectl apply -f kubernetes-processed.yaml
+      else
+        echo "Deployment existe, actualizando imagen..."
+        # Solo actualizar la imagen del deployment existente
+        kubectl set image deployment/todolistapp-springboot-deployment \
+          todolistapp-springboot=$REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH} \
+          -n ${KUBE_NAMESPACE}
+      fi
+      
+  - type: Command
+    name: 🔄 Verificar deployment
+    command: |
+      echo "Esperando que el deployment esté listo..."
+      kubectl rollout status deployment/todolistapp-springboot-deployment -n ${KUBE_NAMESPACE} --timeout=300s
+      
+  - type: Command
+    name: 📊 Estado final
+    command: |
+      kubectl get pods -n ${KUBE_NAMESPACE} -l app=todolistapp-springboot
+      kubectl get services -n ${KUBE_NAMESPACE} -l app=todolistapp-springboot
+      echo "✅ Deployment completado exitosamente"
 
 outputArtifacts:
   - name: todolist-image
