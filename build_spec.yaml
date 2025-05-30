@@ -3,62 +3,21 @@ component: build
 timeoutInSeconds: 3600
 shell: bash
 
-env:
-  variables:
-    REGISTRY: mx-queretaro-1.ocir.io
-    NAMESPACE: axcez6ydclsd
-    REPO: reacttodo/hviyu/todolistapp-springboot
-  exportedVariables:
-    - BUILDRUN_HASH
-
 steps:
   - type: Command
-    name: "📁 Diagnóstico de estructura del repositorio"
+    name: 📁 Diagnóstico de estructura del repositorio
     command: |
       echo "Explorando estructura..."
-      find . -type f -name "pom.xml"
-      command -v tree && tree -L 3 || find . | head -n 100
+      find .
 
   - type: Command
-    name: "🔑 Login en OCIR"
+    name: 🛠️ Construcción del backend
     command: |
-      echo "${auth_token_ocir}" | docker login $REGISTRY -u "${user_ocir}" --password-stdin
+      chmod +x ./MtdrSpring/backend/build.sh
+      ./MtdrSpring/backend/build.sh
 
   - type: Command
-    name: "🔢 Definir tag único para la imagen"
+    name: 🚀 Despliegue del backend
     command: |
-      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
-      echo "BUILDRUN_HASH: $BUILDRUN_HASH"
-      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_DATA_OUT_DIR/build_env_vars
-
-  - type: Command
-    name: "📦 Compilar proyecto y generar JAR"
-    command: |
-      cd backend
-      mvn clean package spring-boot:repackage
-
-  - type: Command
-    name: "🔍 Verificar JAR generado"
-    command: |
-      ls -lh backend/target/*.jar || echo "❌ No se generó el JAR en backend/target"
-
-  - type: Command
-    name: "🚀 Construir y subir imagen Docker a OCIR"
-    command: |
-      cd backend
-
-      echo "Intentando hacer pull de la imagen (por cache)..."
-      docker pull ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} || true
-
-      echo "🔧 Ejecutando docker build..."
-      docker build --pull --no-cache \
-        -f Dockerfile \
-        -t ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} .
-
-      echo "📤 Subiendo imagen a OCIR..."
-      docker push ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
-
-outputArtifacts:
-  - name: todolist-image
-    type: DOCKER_IMAGE
-    location: ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
+      chmod +x ./MtdrSpring/backend/deploy.sh
+      ./MtdrSpring/backend/deploy.sh
