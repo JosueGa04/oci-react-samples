@@ -1,7 +1,7 @@
 version: 0.1
 component: build
-
 timeoutInSeconds: 3600
+shell: bash
 
 env:
   variables:
@@ -10,43 +10,33 @@ env:
     REPO: todolistapp-springboot
   exportedVariables:
     - BUILDRUN_HASH
-    - DOCKER_REGISTRY
 
 steps:
   - type: Command
-    name: 🔧 Compilar el proyecto Spring Boot (Maven)
+    name: Define unique tag
     command: |
-      cd backend
+      echo "OCI_BUILD_RUN_ID: ${OCI_BUILD_RUN_ID}"
+      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
+      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_OUTPUT_DIR/build_vars
+
+  - type: Command
+    name: Login to OCIR
+    command: |
+      echo "🔐 Autenticando en OCIR..."
+      echo "${auth_token_ocir}" | docker login $REGISTRY -u "${user_ocir}" --password-stdin
+
+  - type: Command
+    name: Build & Push
+    command: |
+      echo "📦 Empaquetando JAR con Maven..."
+      cd MtdrSpring/backend
       mvn clean package -DskipTests
 
-  - type: Command
-    name: 🧠 Definir etiqueta de imagen única
-    command: |
-      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
-      echo "BUILDRUN_HASH=${BUILDRUN_HASH}" >> $OCI_BUILD_RUN_EXPORT_FILE
-      export DOCKER_REGISTRY=${REGISTRY}/${NAMESPACE}/${REPO}
-      echo "DOCKER_REGISTRY=${DOCKER_REGISTRY}" >> $OCI_BUILD_RUN_EXPORT_FILE
+      echo "🐳 Construyendo imagen Docker..."
+      docker build -t $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH} .
 
-  - type: Command
-    name: 🔐 Login a OCIR
-    command: |
-      echo "${auth_token_ocir}" | docker login ${REGISTRY} -u "${user_ocir}" --password-stdin
-
-  - type: Command
-    name: 🛠️ Build y Push de imagen Spring Boot
-    command: |
-      cd backend
-
-      echo "Verificando si existe imagen previa..."
-      docker pull ${DOCKER_REGISTRY}:${BUILDRUN_HASH} || true
-
-      echo "Construyendo imagen..."
-      docker build --pull --no-cache \
-        -t ${DOCKER_REGISTRY}:${BUILDRUN_HASH} \
-        .
-
-      echo "Publicando imagen..."
-      docker push ${DOCKER_REGISTRY}:${BUILDRUN_HASH}
+      echo "🚀 Pusheando imagen a OCIR..."
+      docker push $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH}
 
 outputArtifacts:
   - name: todolist-image
