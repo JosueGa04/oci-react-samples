@@ -8,8 +8,8 @@ env:
     REGISTRY: mx-queretaro-1.ocir.io
     NAMESPACE: axcez6ydclsd
     REPO: reacttodo/hviyu/todolistapp-springboot
-    DOCKERHUB_USER: axcez6ydclsd/a01637983@tec.mx
-    DOCKERHUB_TOKEN: w62F8TpFa_)EvbuoS-J#
+    DOCKERHUB_USER: josuega04
+    DOCKERHUB_TOKEN: Welcome26?
   exportedVariables:
     - BUILDRUN_HASH
 
