@@ -1,64 +1,47 @@
 version: 0.1
 component: build
-timeoutInSeconds: 6000
-runAs: root
-shell: bash
+
+timeoutInSeconds: 3600
 
 env:
   variables:
-    IMAGE_NAME: todolistapp-springboot
-    IMAGE_VERSION: 0.1
-    DOCKER_REGISTRY: mx-queretaro-1.ocir.io/axcez6ydclsd
-    TODO_PDB_NAME: reactivohviyu
-    REGION_OCI: mx-queretaro-1
-    UI_USERNAME: admin  # cambia si es otro
-
-  vaultVariables: {}
-  exportedVariables:
+    REGISTRY: mx-queretaro-1.ocir.io
+    NAMESPACE: axcez6ydclsd
+    REPO: reacttodo/hviyu/todolistapp-springboot 
+exportedVariables:
     - BUILDRUN_HASH
 
 steps:
   - type: Command
-    name: "Generate image tag from OCI_BUILD_RUN_ID"
+    name: Login to OCIR
+    command: |
+      echo "🔑 Autenticando en OCIR..."
+      echo "${auth_token_ocir}" \
+        | docker login $REGISTRY \
+            -u "${user_ocir}" \
+            --password-stdin
+  - type: Command
+    name: "Define unique image tag"
     timeoutInSeconds: 40
     command: |
-      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
-      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_DATA_OUT_DIR/build_env_vars
-      echo "BUILDRUN_HASH: $BUILDRUN_HASH"
-
+      export BUILDRUN_HASH=`echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7`
+      echo "BUILDRUN_HASH: " $BUILDRUN_HASH
   - type: Command
-    name: "Build and push Docker image"
-    timeoutInSeconds: 1200
+    name: Build & Push multi-stage (no cache, pull base + prev image)
     command: |
-      cd ${OCI_PRIMARY_SOURCE_DIR}
-      export IMAGE=${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILDRUN_HASH}
-      mvn clean package spring-boot:repackage
-      docker build -f Dockerfile -t $IMAGE .
-      docker push $IMAGE
-      if [ $? -eq 0 ]; then
-        docker rmi "$IMAGE"
-      fi
+      cd MtdrSpring/backend
+      
+      docker pull ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} || true
 
-  - type: Command
-    name: "Generate Kubernetes deployment YAML"
-    timeoutInSeconds: 300
-    command: |
-      export CURRENTTIME=$(date '+%F_%H-%M-%S')
-      cp todolistapp-springboot.yaml todolistapp-springboot-$CURRENTTIME.yaml
+      docker build --pull --no-cache \
+        -f Dockerfile \
+        -t ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH} \
+        .
 
-      sed -i "s|%DOCKER_REGISTRY%|${DOCKER_REGISTRY}|g" todolistapp-springboot-$CURRENTTIME.yaml
-      sed -i "s|%TODO_PDB_NAME%|${TODO_PDB_NAME}|g" todolistapp-springboot-$CURRENTTIME.yaml
-      sed -i "s|%REGION_OCI%|${REGION_OCI}|g" todolistapp-springboot-$CURRENTTIME.yaml
-      sed -i "s|%UI_USERNAME%|${UI_USERNAME}|g" todolistapp-springboot-$CURRENTTIME.yaml
-      sed -i "s|\${BUILDRUN_HASH}|${BUILDRUN_HASH}|g" todolistapp-springboot-$CURRENTTIME.yaml
-
-      mv todolistapp-springboot-$CURRENTTIME.yaml deployment.yaml
+      # 3) push siempre sobre 'latest'
+      docker push ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
 
 outputArtifacts:
-  - name: todolistapp_image
+  - name: todolist-image
     type: DOCKER_IMAGE
-    location: ${DOCKER_REGISTRY}/todolistapp-springboot:${BUILDRUN_HASH}
-
-  - name: todolistapp_deploy_manifest
-    type: BINARY
-    location: ${OCI_PRIMARY_SOURCE_DIR}/deployment.yaml
+    location: ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
