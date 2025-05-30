@@ -28,13 +28,12 @@ steps:
       export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
       echo "BUILDRUN_HASH: $BUILDRUN_HASH"
       echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_DATA_OUT_DIR/build_env_vars
-
+      
   - type: Command
-    name: Build JAR with Maven
+    name: Build JAR with Maven + Repackage
     command: |
-      echo "📦 Compilando el proyecto Spring Boot..."
       cd MtdrSpring/backend
-      mvn clean package
+      mvn clean package spring-boot:repackage
 
   - type: Command
     name: Build & Push Docker Image
