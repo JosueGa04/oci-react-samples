@@ -30,12 +30,16 @@ const USERS_URL = "/users";
 const SPRINTS_URL = "/sprints";
 
 const oracleColors = [
-  '#F80000', // Naranja
-  '#0072C6', // Azul
-  '#A4C8E1', // Verde
-  '#F6EB61', // Amarillo
-  '#D50000', // Rojo
-  '#A6A6A6', // Gris
+  "#0072C6", // Blue
+  "#D50000", // Red
+  "#228B22", // Forest Green
+  "#4B0082", // Indigo
+  "#FF8C00", // Dark Orange
+  "#A6A6A6", // Gray
+  "#8B4513", // Saddle Brown
+  "#2F4F4F", // Dark Slate Gray
+  "#800080", // Purple
+  "#006400", // Dark Green
 ];
 
 const Reports = () => {
@@ -181,7 +185,9 @@ const Reports = () => {
       if (!task.idSprint || !task.assignee) return;
       const userName = getUserName(task.assignee);
       const sprint = sprints.find((s) => s.idSprint === task.idSprint);
-      const sprintTitle = sprint ? sprint.sprintTitle : `Sprint ${task.idSprint}`;
+      const sprintTitle = sprint
+        ? sprint.sprintTitle
+        : `Sprint ${task.idSprint}`;
 
       if (!hoursByDeveloper[task.idSprint]) {
         hoursByDeveloper[task.idSprint] = { sprintTitle, ...{} };
@@ -207,7 +213,9 @@ const Reports = () => {
       if (!task.idSprint || !task.assignee) return;
       const userName = getUserName(task.assignee);
       const sprint = sprints.find((s) => s.idSprint === task.idSprint);
-      const sprintTitle = sprint ? sprint.sprintTitle : `Sprint ${task.idSprint}`;
+      const sprintTitle = sprint
+        ? sprint.sprintTitle
+        : `Sprint ${task.idSprint}`;
 
       if (!tasksByDeveloper[task.idSprint]) {
         tasksByDeveloper[task.idSprint] = { sprintTitle, ...{} };
@@ -282,9 +290,13 @@ const Reports = () => {
             <Bar
               dataKey="tasksCompleted"
               name="Tasks Completed"
-              fill="#c74634"
+              fill={oracleColors[0]}
             />
-            <Bar dataKey="hoursWorked" name="Hours Worked" fill="#312d2a" />
+            <Bar
+              dataKey="hoursWorked"
+              name="Hours Worked"
+              fill={oracleColors[1]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </Box>
@@ -306,9 +318,13 @@ const Reports = () => {
             <Bar
               dataKey="tasksCompleted"
               name="Tasks Completed"
-              fill="#c74634"
+              fill={oracleColors[0]}
             />
-            <Bar dataKey="hoursWorked" name="Hours Worked" fill="#312d2a" />
+            <Bar
+              dataKey="hoursWorked"
+              name="Hours Worked"
+              fill={oracleColors[1]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </Box>
@@ -327,7 +343,11 @@ const Reports = () => {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="totalHours" name="Total Hours" fill="#c74634" />
+            <Bar
+              dataKey="totalHours"
+              name="Total Hours"
+              fill={oracleColors[0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </Box>
@@ -336,10 +356,9 @@ const Reports = () => {
 
   const renderHoursWorkedByDeveloperPerSprint = () => {
     const sprintData = getHoursWorkedByDeveloperPerSprint();
-    const developers = Object.keys(sprintData[0] || {}).filter(key => key !== 'sprintId' && key !== 'sprintTitle');
-    
-    // Usar los colores especificados
-    const colors = developers.map((_, index) => (index % 2 === 0 ? '#c74634' : '#312d2a'));
+    const developers = Object.keys(sprintData[0] || {}).filter(
+      (key) => key !== "sprintId" && key !== "sprintTitle"
+    );
 
     return (
       <Box sx={{ height: 400 }}>
@@ -351,7 +370,12 @@ const Reports = () => {
             <Tooltip />
             <Legend />
             {developers.map((devName, index) => (
-              <Bar key={devName} dataKey={devName} name={devName} fill={colors[index]} />
+              <Bar
+                key={devName}
+                dataKey={devName}
+                name={devName}
+                fill={oracleColors[index % oracleColors.length]}
+              />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -361,10 +385,9 @@ const Reports = () => {
 
   const renderCompletedTasksByDeveloperPerSprint = () => {
     const sprintData = getCompletedTasksByDeveloperPerSprint();
-    const developers = Object.keys(sprintData[0] || {}).filter(key => key !== 'sprintId' && key !== 'sprintTitle');
-    
-    // Usar los colores especificados
-    const colors = developers.map((_, index) => (index % 2 === 0 ? '#c74634' : '#312d2a'));
+    const developers = Object.keys(sprintData[0] || {}).filter(
+      (key) => key !== "sprintId" && key !== "sprintTitle"
+    );
 
     return (
       <Box sx={{ height: 400 }}>
@@ -376,7 +399,12 @@ const Reports = () => {
             <Tooltip />
             <Legend />
             {developers.map((devName, index) => (
-              <Bar key={devName} dataKey={devName} name={devName} fill={colors[index]} />
+              <Bar
+                key={devName}
+                dataKey={devName}
+                name={devName}
+                fill={oracleColors[index % oracleColors.length]}
+              />
             ))}
           </BarChart>
         </ResponsiveContainer>
