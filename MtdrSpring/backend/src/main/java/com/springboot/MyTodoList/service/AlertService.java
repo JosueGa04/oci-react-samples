@@ -7,7 +7,6 @@ import com.springboot.MyTodoList.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -32,16 +31,6 @@ public class AlertService {
     public AlertService(AlertRepository alertRepository, UserRepository userRepository) {
         this.alertRepository = alertRepository;
         this.userRepository = userRepository;
-    }
-
-    @Scheduled(fixedRate = 3600000) // Ejecuta cada hora
-    public void sendScheduledAlerts() {
-        List<Alert> pendingAlerts = alertRepository.findByStatus("PENDING");
-        for (Alert alert : pendingAlerts) {
-            sendNotification(alert);
-            alert.setStatus("SENT");
-            alertRepository.save(alert);
-        }
     }
 
     public void sendNotification(Alert alert) {
@@ -81,8 +70,7 @@ public class AlertService {
         String message = "Tienes una nueva alerta:\n\n" +
                          "Tarea: " + alert.getTask() + "\n" +
                          "Descripción: " + alert.getMessage() + "\n" +
-                         "Prioridad: " + alert.getPriority() + "\n" +
-                         "Fecha programada: " + alert.getScheduledTime().toString();
+                         "Prioridad: " + alert.getPriority();
     
         // URL para enviar el mensaje a través de la API de Telegram
         String url = "https://api.telegram.org/bot" + botToken + "/sendMessage?chat_id=" + chatId + "&text=" + message;
@@ -106,31 +94,21 @@ public class AlertService {
         alert.setUserId(userId);
         alert.setPriority(priority);
         alert.setScheduledTime(scheduledTime);
-        alert.setStatus("PENDING");
+        alert.setStatus("SENT");
 
-        return alertRepository.save(alert);
+        Alert savedAlert = alertRepository.save(alert);
+        sendNotification(savedAlert);
+        return savedAlert;
     }
 
-    // Method to find all alerts based on status (e.g., PENDING, SENT)
-    public List<Alert> getAlertsByStatus(String status) {
-        return alertRepository.findByStatus(status);
+    // Method to find all alerts
+    public List<Alert> getAllAlerts() {
+        return alertRepository.findAll();
     }
 
     // Method to find alerts by user ID
     public List<Alert> getAlertsByUserId(String userId) {
         return alertRepository.findByUserId(userId);
-    }
-
-    // Method to find overdue alerts (scheduled before now but still PENDING)
-    public List<Alert> getOverdueAlerts() {
-        return alertRepository.findOverdueAlerts(OffsetDateTime.now());
-    }
-
-    // Method to update the alert status (e.g., SENT or CANCELLED)
-    public Alert updateAlertStatus(Long id, String status) throws Exception {
-        Alert alert = alertRepository.findById(id).orElseThrow(() -> new Exception("Alert not found"));
-        alert.setStatus(status);
-        return alertRepository.save(alert);
     }
 
     public Boolean deleteAlert(Long id) {

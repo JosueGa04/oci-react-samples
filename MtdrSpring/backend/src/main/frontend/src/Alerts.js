@@ -21,21 +21,33 @@ import {
   Typography,
   CircularProgress,
   alpha,
+  Tabs,
+  Tab,
+  Chip,
 } from "@mui/material";
-import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
+import {
+  Delete as DeleteIcon,
+  Add as AddIcon,
+  Warning as WarningIcon,
+} from "@mui/icons-material";
 import AlertForm from "./AlertForm";
 import Moment from "react-moment";
 
 const API_URL = "/alerts";
+const ISSUES_URL = "/issues";
 
 function Alerts() {
   const [alerts, setAlerts] = useState([]);
+  const [issues, setIssues] = useState([]);
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [currentTab, setCurrentTab] = useState(0);
+  const [selectedIssue, setSelectedIssue] = useState(null);
 
   useEffect(() => {
     loadAlerts();
+    loadIssues();
   }, []);
 
   function loadAlerts() {
@@ -59,6 +71,26 @@ function Alerts() {
         setLoading(false);
         setError(error);
         console.error("Error cargando alertas:", error);
+      });
+  }
+
+  function loadIssues() {
+    fetch(ISSUES_URL)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Error en la respuesta: ${response.status} ${response.statusText}`
+          );
+        }
+        return response.json();
+      })
+      .then((result) => {
+        // Filter only non-completed issues
+        const pendingIssues = result.filter((issue) => issue.status !== 1);
+        setIssues(pendingIssues);
+      })
+      .catch((error) => {
+        console.error("Error cargando issues:", error);
       });
   }
 
@@ -90,16 +122,37 @@ function Alerts() {
     setAlerts([newAlert, ...alerts]);
   }
 
-  function openForm() {
+  function openForm(issue = null) {
+    setSelectedIssue(issue);
     setIsFormOpen(true);
   }
 
   function closeForm() {
     setIsFormOpen(false);
+    setSelectedIssue(null);
   }
 
   function retryLoadAlerts() {
     loadAlerts();
+  }
+
+  function handleTabChange(event, newValue) {
+    setCurrentTab(newValue);
+  }
+
+  function getDaysUntilDue(dueDate) {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }
+
+  function getPriorityColor(daysUntilDue) {
+    if (daysUntilDue < 0) return "#c74634"; // Overdue
+    if (daysUntilDue <= 3) return "#f39c12"; // High priority
+    if (daysUntilDue <= 7) return "#27ae60"; // Medium priority
+    return "#3498db"; // Low priority
   }
 
   return (
@@ -119,7 +172,7 @@ function Alerts() {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={openForm}
+          onClick={() => openForm()}
           sx={{
             backgroundColor: "#c74634",
             borderRadius: "12px",
@@ -138,6 +191,24 @@ function Alerts() {
           Nueva Alerta
         </Button>
       </Box>
+
+      <Tabs
+        value={currentTab}
+        onChange={handleTabChange}
+        sx={{
+          mb: 3,
+          borderBottom: 1,
+          borderColor: "divider",
+          "& .MuiTab-root": {
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "1rem",
+          },
+        }}
+      >
+        <Tab label="Alertas Generales" />
+        <Tab label="Seguimiento de Deadlines" />
+      </Tabs>
 
       {error && (
         <Box sx={{ color: "red", mb: 2 }}>
@@ -165,95 +236,207 @@ function Alerts() {
           <Typography>Cargando alertas...</Typography>
         </Box>
       ) : (
-        <TableContainer
-          component={Paper}
-          sx={{
-            borderRadius: "16px",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-            overflow: "hidden",
-          }}
-        >
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: alpha("#312d2a", 0.05) }}>
-                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                  Mensaje
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                  Tarea
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                  Prioridad
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                  Hora Programada
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                  Acciones
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {alerts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    No se encontraron alertas
-                  </TableCell>
-                </TableRow>
-              ) : (
-                alerts.map((alert) => (
-                  <TableRow
-                    key={alert.id}
-                    sx={{
-                      "&:hover": {
-                        backgroundColor: alpha("#c74634", 0.04),
-                      },
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    <TableCell>{alert.message}</TableCell>
-                    <TableCell>{alert.task}</TableCell>
-                    <TableCell>
-                      <Typography
-                        sx={{
-                          color:
-                            alert.priority === "ALTA"
-                              ? "#c74634"
-                              : alert.priority === "MEDIA"
-                              ? "#f39c12"
-                              : "#27ae60",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {alert.priority}
-                      </Typography>
+        <>
+          {currentTab === 0 ? (
+            <TableContainer
+              component={Paper}
+              sx={{
+                borderRadius: "16px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                overflow: "hidden",
+              }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: alpha("#312d2a", 0.05) }}>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Mensaje
                     </TableCell>
-                    <TableCell>
-                      <Moment format="MMM Do hh:mm:ss">
-                        {alert.scheduledTime}
-                      </Moment>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Tarea
                     </TableCell>
-                    <TableCell>
-                      <IconButton
-                        aria-label="delete"
-                        onClick={() => deleteAlert(alert.id)}
-                        size="small"
-                        sx={{
-                          color: "#c74634",
-                          "&:hover": {
-                            backgroundColor: alpha("#c74634", 0.1),
-                          },
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Prioridad
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Hora Programada
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Acciones
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {alerts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No se encontraron alertas
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    alerts.map((alert) => (
+                      <TableRow
+                        key={alert.id}
+                        sx={{
+                          "&:hover": {
+                            backgroundColor: alpha("#c74634", 0.04),
+                          },
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        <TableCell>{alert.message}</TableCell>
+                        <TableCell>{alert.task}</TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              color:
+                                alert.priority === "ALTA"
+                                  ? "#c74634"
+                                  : alert.priority === "MEDIA"
+                                  ? "#f39c12"
+                                  : "#27ae60",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {alert.priority}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Moment format="MMM Do hh:mm:ss">
+                            {alert.scheduledTime}
+                          </Moment>
+                        </TableCell>
+                        <TableCell>
+                          <IconButton
+                            aria-label="delete"
+                            onClick={() => deleteAlert(alert.id)}
+                            size="small"
+                            sx={{
+                              color: "#c74634",
+                              "&:hover": {
+                                backgroundColor: alpha("#c74634", 0.1),
+                              },
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <TableContainer
+              component={Paper}
+              sx={{
+                borderRadius: "16px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                overflow: "hidden",
+              }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: alpha("#312d2a", 0.05) }}>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Tarea
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Estado
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Fecha de Entrega
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Días Restantes
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
+                      Acciones
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {issues.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No se encontraron tareas pendientes
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    issues.map((issue) => {
+                      const daysUntilDue = getDaysUntilDue(issue.dueDate);
+                      return (
+                        <TableRow
+                          key={issue.issueId}
+                          sx={{
+                            "&:hover": {
+                              backgroundColor: alpha("#c74634", 0.04),
+                            },
+                            transition: "all 0.2s ease",
+                          }}
+                        >
+                          <TableCell>{issue.issueTitle}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={
+                                issue.status === 1
+                                  ? "Completado"
+                                  : "En Progreso"
+                              }
+                              color={issue.status === 1 ? "success" : "warning"}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Moment format="DD/MM/YYYY">{issue.dueDate}</Moment>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                color: getPriorityColor(daysUntilDue),
+                                fontWeight: "bold",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                              }}
+                            >
+                              {daysUntilDue < 0 ? (
+                                <>
+                                  <WarningIcon fontSize="small" />
+                                  {Math.abs(daysUntilDue)} días de retraso
+                                </>
+                              ) : (
+                                `${daysUntilDue} días`
+                              )}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() => openForm(issue)}
+                              sx={{
+                                color: "#c74634",
+                                borderColor: "#c74634",
+                                "&:hover": {
+                                  borderColor: "#b13d2b",
+                                  backgroundColor: alpha("#c74634", 0.1),
+                                },
+                              }}
+                            >
+                              Crear Alerta
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </>
       )}
 
       <Dialog
@@ -279,7 +462,11 @@ function Alerts() {
           </Typography>
         </DialogTitle>
         <DialogContent>
-          <AlertForm onClose={closeForm} onAlertCreated={handleAlertCreated} />
+          <AlertForm
+            onClose={closeForm}
+            onAlertCreated={handleAlertCreated}
+            selectedIssue={selectedIssue}
+          />
         </DialogContent>
       </Dialog>
     </Box>

@@ -13,9 +13,9 @@ import {
 } from "@mui/material";
 
 const ISSUES_API_URL = "/issues";
-const USERS_API_URL = "/users"; // Nueva URL para obtener usuarios
+const USERS_API_URL = "/users";
 
-function AlertForm(props) {
+function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
   const [alertData, setAlertData] = useState({
     message: "",
     taskId: "",
@@ -23,20 +23,50 @@ function AlertForm(props) {
     projectId: "",
     userId: "",
     priority: "MEDIA",
-    scheduledTime: new Date().toISOString().slice(0, 16),
+    scheduledTime: new Date().toISOString(),
   });
 
   const [issues, setIssues] = useState([]);
-  const [users, setUsers] = useState([]); // Nuevo estado para usuarios
+  const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false); // Nuevo estado para carga de usuarios
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [error, setError] = useState(null);
-  const [userError, setUserError] = useState(null); // Nuevo estado para errores de usuarios
+  const [userError, setUserError] = useState(null);
 
   useEffect(() => {
     loadIssues();
-    loadUsers(); // Cargar usuarios al iniciar
-  }, []);
+    loadUsers();
+
+    // If a selected issue is provided, pre-fill the form
+    if (selectedIssue) {
+      setAlertData((prevData) => ({
+        ...prevData,
+        taskId: selectedIssue.issueId,
+        task: selectedIssue.issueTitle,
+        projectId: selectedIssue.idSprint || "",
+        message: `Recordatorio: La tarea "${
+          selectedIssue.issueTitle
+        }" vence en ${getDaysUntilDue(selectedIssue.dueDate)} días`,
+        priority: getPriorityFromDueDate(selectedIssue.dueDate),
+      }));
+    }
+  }, [selectedIssue]);
+
+  function getDaysUntilDue(dueDate) {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }
+
+  function getPriorityFromDueDate(dueDate) {
+    const daysUntilDue = getDaysUntilDue(dueDate);
+    if (daysUntilDue < 0) return "ALTA";
+    if (daysUntilDue <= 3) return "ALTA";
+    if (daysUntilDue <= 7) return "MEDIA";
+    return "BAJA";
+  }
 
   function loadIssues() {
     setIsLoading(true);
@@ -53,7 +83,6 @@ function AlertForm(props) {
       })
       .then((result) => {
         setIsLoading(false);
-        // Filter only non-completed issues
         const pendingIssues = result.filter((issue) => !issue.done);
         setIssues(pendingIssues);
       })
@@ -116,7 +145,11 @@ function AlertForm(props) {
         ...prevData,
         taskId: selectedIssue.issueId,
         task: selectedIssue.issueTitle,
-        projectId: selectedIssue.idSprint || "", // Using sprint ID as project ID
+        projectId: selectedIssue.idSprint || "",
+        message: `Recordatorio: La tarea "${
+          selectedIssue.issueTitle
+        }" vence en ${getDaysUntilDue(selectedIssue.dueDate)} días`,
+        priority: getPriorityFromDueDate(selectedIssue.dueDate),
       }));
     }
   }
@@ -142,7 +175,7 @@ function AlertForm(props) {
 
     const adjustedAlertData = {
       ...alertData,
-      scheduledTime: new Date(alertData.scheduledTime).toISOString(),
+      scheduledTime: new Date().toISOString(),
     };
 
     fetch("/alerts", {
@@ -160,8 +193,8 @@ function AlertForm(props) {
       })
       .then((savedAlert) => {
         console.log("Alerta guardada:", savedAlert);
-        props.onAlertCreated(savedAlert);
-        props.onClose();
+        onAlertCreated(savedAlert);
+        onClose();
       })
       .catch((error) => {
         console.error("Error al guardar la alerta:", error);
@@ -169,58 +202,10 @@ function AlertForm(props) {
       });
   }
 
-  function handleSendNow(e) {
-    e.preventDefault();
-    if (!alertData.message.trim()) {
-      alert("El mensaje de alerta es obligatorio.");
-      return;
-    }
-
-    if (!alertData.taskId && !alertData.task.trim()) {
-      alert(
-        "Por favor, seleccione una tarea o complete los campos de tarea manualmente."
-      );
-      return;
-    }
-
-    if (!alertData.userId) {
-      alert("Por favor, seleccione un usuario para enviar la alerta.");
-      return;
-    }
-
-    const immediateAlertData = {
-      ...alertData,
-      scheduledTime: new Date().toISOString(),
-    };
-
-    fetch("/alerts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(immediateAlertData),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            `Error en la respuesta: ${response.status} ${response.statusText}`
-          );
-        }
-        return response.json();
-      })
-      .then((savedAlert) => {
-        console.log("Alerta enviada inmediatamente:", savedAlert);
-        props.onAlertCreated(savedAlert);
-        props.onClose();
-      })
-      .catch((error) => {
-        console.error("Error al enviar la alerta:", error);
-        alert("Error al enviar la alerta: " + error.message);
-      });
-  }
-
   function retryLoadUsers() {
     loadUsers();
   }
-  
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
       {isLoading ? (
@@ -294,15 +279,6 @@ function AlertForm(props) {
           />
         </Grid>
         <Grid item xs={6}>
-          <TextField
-            fullWidth
-            label="Project ID"
-            name="projectId"
-            value={alertData.projectId}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={6}>
           <FormControl fullWidth>
             <InputLabel>Usuario</InputLabel>
             {isLoadingUsers ? (
@@ -357,37 +333,16 @@ function AlertForm(props) {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={6}>
-          <TextField
-            fullWidth
-            label="Fecha Programada"
-            name="scheduledTime"
-            type="datetime-local"
-            value={alertData.scheduledTime}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true }}
-            required
-          />
-        </Grid>
       </Grid>
 
-
       <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "flex-end" }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSendNow}
-          sx={{ minWidth: "120px" }}
-        >
-          Enviar Ahora
-        </Button>
         <Button
           variant="contained"
           color="primary"
           type="submit"
           sx={{ minWidth: "120px" }}
         >
-          Programar
+          Enviar Alerta
         </Button>
       </Box>
     </Box>
