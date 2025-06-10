@@ -414,9 +414,17 @@ const Reports = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3, color: "#312d2a" }}>
-        Reports
-      </Typography>
+      <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            color: "#312d2a",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+          }}
+        >
+          Reports
+        </Typography>
 
       <Tabs
         value={currentTab}

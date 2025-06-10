@@ -167,7 +167,7 @@ function Alerts() {
             letterSpacing: "0.5px",
           }}
         >
-          Gestión de Alertas
+          Alert Management
         </Typography>
         <Button
           variant="contained"
@@ -188,7 +188,7 @@ function Alerts() {
             transition: "all 0.2s ease-in-out",
           }}
         >
-          Nueva Alerta
+          New Alert
         </Button>
       </Box>
 
@@ -206,8 +206,8 @@ function Alerts() {
           },
         }}
       >
-        <Tab label="Alertas Generales" />
-        <Tab label="Seguimiento de Deadlines" />
+        <Tab label="General Alerts" />
+        <Tab label="Deadline Tracking" />
       </Tabs>
 
       {error && (
@@ -225,7 +225,7 @@ function Alerts() {
               },
             }}
           >
-            Reintentar
+            Retry
           </Button>
         </Box>
       )}
@@ -233,7 +233,7 @@ function Alerts() {
       {isLoading ? (
         <Box sx={{ textAlign: "center", p: 3 }}>
           <CircularProgress sx={{ color: "#c74634" }} />
-          <Typography>Cargando alertas...</Typography>
+          <Typography>Loading alerts...</Typography>
         </Box>
       ) : (
         <>
@@ -250,19 +250,19 @@ function Alerts() {
                 <TableHead>
                   <TableRow sx={{ backgroundColor: alpha("#312d2a", 0.05) }}>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Mensaje
+                      Message
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Tarea
+                      Task
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Prioridad
+                      Priority
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Hora Programada
+                      Scheduled Time
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Acciones
+                      Actions
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -270,7 +270,7 @@ function Alerts() {
                   {alerts.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} align="center">
-                        No se encontraron alertas
+                        No alerts found
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -290,9 +290,9 @@ function Alerts() {
                           <Typography
                             sx={{
                               color:
-                                alert.priority === "ALTA"
+                                alert.priority === "HIGH"
                                   ? "#c74634"
-                                  : alert.priority === "MEDIA"
+                                  : alert.priority === "MEDIUM"
                                   ? "#f39c12"
                                   : "#27ae60",
                               fontWeight: "bold",
@@ -340,19 +340,19 @@ function Alerts() {
                 <TableHead>
                   <TableRow sx={{ backgroundColor: alpha("#312d2a", 0.05) }}>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Tarea
+                      Task
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Estado
+                      Status
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Fecha de Entrega
+                      Due Date
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Días Restantes
+                      Days Remaining
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: "#312d2a" }}>
-                      Acciones
+                      Actions
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -360,7 +360,7 @@ function Alerts() {
                   {issues.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} align="center">
-                        No se encontraron tareas pendientes
+                        No pending tasks found
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -381,8 +381,8 @@ function Alerts() {
                             <Chip
                               label={
                                 issue.status === 1
-                                  ? "Completado"
-                                  : "En Progreso"
+                                  ? "Completed"
+                                  : "In Progress"
                               }
                               color={issue.status === 1 ? "success" : "warning"}
                               size="small"
@@ -404,10 +404,10 @@ function Alerts() {
                               {daysUntilDue < 0 ? (
                                 <>
                                   <WarningIcon fontSize="small" />
-                                  {Math.abs(daysUntilDue)} días de retraso
+                                  {Math.abs(daysUntilDue)} days overdue
                                 </>
                               ) : (
-                                `${daysUntilDue} días`
+                                `${daysUntilDue} days`
                               )}
                             </Typography>
                           </TableCell>
@@ -425,7 +425,7 @@ function Alerts() {
                                 },
                               }}
                             >
-                              Crear Alerta
+                              Create Alert
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -458,7 +458,7 @@ function Alerts() {
           }}
         >
           <Typography variant="h5" sx={{ fontWeight: 600, color: "#312d2a" }}>
-            Crear Nueva Alerta
+            Create New Alert
           </Typography>
         </DialogTitle>
         <DialogContent>

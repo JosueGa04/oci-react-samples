@@ -219,8 +219,10 @@ const Tasks = () => {
         <Typography
           variant="h4"
           sx={{
+            fontWeight: 700,
             color: "#312d2a",
-            fontSize: { xs: "1.5rem", sm: "2rem" },
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
           }}
         >
           Backlog

@@ -30,6 +30,7 @@ import {
   Add as AddIcon,
   CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
+import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 
 const API_URL = "/sprints";
 const ISSUES_URL = "/issues";
@@ -249,6 +250,23 @@ const Sprints = () => {
     }
   };
 
+  const getPieChartData = () => {
+    if (!selectedSprint) return [];
+
+    const sprintIssues = issues.filter(
+      (issue) => issue.idSprint === selectedSprint.idSprint
+    );
+    const total = sprintIssues.length;
+    const completed = sprintIssues.filter((issue) => issue.status === 1).length;
+
+    return [
+      { name: "Completed", value: completed },
+      { name: "In Progress", value: total - completed },
+    ];
+  };
+
+  const pieColors = ["#4caf50", "#ff9800"]; // green for completed, orange for in progress
+
   return (
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 4 }}>
@@ -303,41 +321,71 @@ const Sprints = () => {
 
       {selectedSprint && (
         <>
-          <Paper
-            sx={{
-              p: 3,
-              mb: 4,
-              borderRadius: "16px",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-            }}
-          >
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Sprint Details
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Typography variant="h5" sx={{ mb: 2 }}>
-                  {selectedSprint.sprintTitle ||
-                    `Sprint ${selectedSprint.idSprint}`}
+          <Grid container spacing={2} sx={{ mb: 4 }}>
+            <Grid item xs={12} md={6}>
+              <Paper
+                sx={{
+                  p: 3,
+                  borderRadius: "16px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                  height: "100%",
+                }}
+              >
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Sprint Details
                 </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body1">
-                  <strong>Start Date:</strong>{" "}
-                  {formatDate(selectedSprint.startDate)}
-                </Typography>
-                <Typography variant="body1">
-                  <strong>End Date:</strong>{" "}
-                  {formatDate(selectedSprint.endDate)}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body1">
-                  <strong>Goal:</strong> {selectedSprint.sprintGoal}
-                </Typography>
-              </Grid>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <Typography variant="h5" sx={{ mb: 2 }}>
+                      {selectedSprint.sprintTitle || `Sprint ${selectedSprint.idSprint}`}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body1">
+                      <strong>Start Date:</strong> {formatDate(selectedSprint.startDate)}
+                    </Typography>
+                    <Typography variant="body1">
+                      <strong>End Date:</strong> {formatDate(selectedSprint.endDate)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body1">
+                      <strong>Goal:</strong> {selectedSprint.sprintGoal}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Paper>
             </Grid>
-          </Paper>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: "flex", justifyContent: "center", height: "100%", alignItems: "center" }}>
+                <PieChart width={300} height={250}>
+                  <Pie
+                    data={getPieChartData()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, value, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  >
+                    {getPieChartData().map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend
+                    payload={getPieChartData().map((entry, index) => ({
+                      id: entry.name,
+                      type: "square",
+                      value: `${entry.name}`,
+                      color: pieColors[index % pieColors.length],
+                    }))}
+                  />
+                </PieChart>
+              </Box>
+            </Grid>
+          </Grid>
 
           <TableContainer
             component={Paper}

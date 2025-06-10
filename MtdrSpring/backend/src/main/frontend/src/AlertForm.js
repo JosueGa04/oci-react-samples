@@ -22,7 +22,7 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
     task: "",
     projectId: "",
     userId: "",
-    priority: "MEDIA",
+    priority: "MEDIUM",
     scheduledTime: new Date().toISOString(),
   });
 
@@ -157,19 +157,19 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
   function handleSubmit(e) {
     e.preventDefault();
     if (!alertData.message.trim()) {
-      alert("El mensaje de alerta es obligatorio.");
+      alert("Alert message is required.");
       return;
     }
 
     if (!alertData.taskId && !alertData.task.trim()) {
       alert(
-        "Por favor, seleccione una tarea o complete los campos de tarea manualmente."
+        "Please select a task or complete the task fields manually."
       );
       return;
     }
 
     if (!alertData.userId) {
-      alert("Por favor, seleccione un usuario para enviar la alerta.");
+      alert("Please select a user to send the alert to.");
       return;
     }
 
@@ -186,19 +186,19 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
       .then((response) => {
         if (!response.ok) {
           throw new Error(
-            `Error en la respuesta: ${response.status} ${response.statusText}`
+            `Response error: ${response.status} ${response.statusText}`
           );
         }
         return response.json();
       })
       .then((savedAlert) => {
-        console.log("Alerta guardada:", savedAlert);
+        console.log("Alert saved:", savedAlert);
         onAlertCreated(savedAlert);
         onClose();
       })
       .catch((error) => {
-        console.error("Error al guardar la alerta:", error);
-        alert("Error al guardar la alerta: " + error.message);
+        console.error("Error saving alert:", error);
+        alert("Error saving alert: " + error.message);
       });
   }
 
@@ -211,7 +211,7 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
       {isLoading ? (
         <Box sx={{ textAlign: "center", p: 3 }}>
           <CircularProgress size={24} />
-          <p>Cargando tareas...</p>
+          <p>Loading tasks...</p>
         </Box>
       ) : error ? (
         <Box sx={{ color: "red", mb: 2 }}>
@@ -223,18 +223,18 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
             size="small"
             sx={{ mt: 1 }}
           >
-            Reintentar
+            Retry
           </Button>
         </Box>
       ) : (
         <FormControl fullWidth margin="normal">
-          <InputLabel>Seleccionar Tarea</InputLabel>
+          <InputLabel>Select Task</InputLabel>
           <Select
             name="selectedTask"
             value={alertData.taskId}
             onChange={handleIssueSelection}
           >
-            <MenuItem value="">-- Seleccionar una tarea --</MenuItem>
+            <MenuItem value="">-- Select a task --</MenuItem>
             {issues.map((issue) => (
               <MenuItem key={issue.issueId} value={issue.issueId}>
                 {issue.issueTitle}
@@ -247,7 +247,7 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
       <TextField
         fullWidth
         margin="normal"
-        label="Mensaje de Alerta"
+        label="Alert Message"
         name="message"
         value={alertData.message}
         onChange={handleChange}
@@ -270,7 +270,7 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
         <Grid item xs={6}>
           <TextField
             fullWidth
-            label="Tarea"
+            label="Task"
             name="task"
             value={alertData.task}
             onChange={handleChange}
@@ -280,18 +280,18 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
         </Grid>
         <Grid item xs={6}>
           <FormControl fullWidth>
-            <InputLabel>Usuario</InputLabel>
+            <InputLabel>User</InputLabel>
             {isLoadingUsers ? (
               <Box sx={{ display: "flex", alignItems: "center", p: 2 }}>
                 <CircularProgress size={24} />
                 <Typography variant="caption" sx={{ ml: 1 }}>
-                  Cargando usuarios...
+                  Loading users...
                 </Typography>
               </Box>
             ) : userError ? (
               <Box>
                 <Typography color="error" variant="caption">
-                  Error al cargar usuarios: {userError.message}
+                  Error loading users: {userError.message}
                 </Typography>
                 <Button
                   variant="outlined"
@@ -299,7 +299,7 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
                   onClick={retryLoadUsers}
                   sx={{ mt: 1, display: "block" }}
                 >
-                  Reintentar
+                  Retry
                 </Button>
               </Box>
             ) : (
@@ -309,7 +309,7 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
                 onChange={handleChange}
                 required
               >
-                <MenuItem value="">-- Seleccionar un usuario --</MenuItem>
+                <MenuItem value="">-- Select a user --</MenuItem>
                 {users.map((user) => (
                   <MenuItem key={user.userId} value={user.userId.toString()}>
                     {user.userName}
@@ -321,15 +321,15 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
         </Grid>
         <Grid item xs={6}>
           <FormControl fullWidth>
-            <InputLabel>Prioridad</InputLabel>
+            <InputLabel>Priority</InputLabel>
             <Select
               name="priority"
               value={alertData.priority}
               onChange={handleChange}
             >
-              <MenuItem value="BAJA">Baja</MenuItem>
-              <MenuItem value="MEDIA">Media</MenuItem>
-              <MenuItem value="ALTA">Alta</MenuItem>
+              <MenuItem value="LOW">Low</MenuItem>
+              <MenuItem value="MEDIUM">Medium</MenuItem>
+              <MenuItem value="HIGH">High</MenuItem>
             </Select>
           </FormControl>
         </Grid>
@@ -342,7 +342,7 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
           type="submit"
           sx={{ minWidth: "120px" }}
         >
-          Enviar Alerta
+          Send Alert
         </Button>
       </Box>
     </Box>
