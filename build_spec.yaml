@@ -1,0 +1,44 @@
+version: 0.1
+component: build
+timeoutInSeconds: 3600
+shell: bash
+
+env:
+  variables:
+    REGISTRY: mx-queretaro-1.ocir.io
+    NAMESPACE: axcez6ydclsd
+    REPO: reacttodo/hviyu/todolistapp-springboot
+    DOCKERHUB_USER: josuega04
+    DOCKERHUB_TOKEN: Welcome26?
+  exportedVariables:
+    - BUILDRUN_HASH
+
+steps:
+  - type: Command
+    name: 🔑 Definir hash único
+    command: |
+      echo "OCI_BUILD_RUN_ID: ${OCI_BUILD_RUN_ID}"
+      export BUILDRUN_HASH=$(echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7)
+      echo "BUILDRUN_HASH=$BUILDRUN_HASH" >> $OCI_OUTPUT_DIR/build_vars
+
+  - type: Command
+    name: 🔐 Login a OCIR
+    command: |
+      echo "${auth_token_ocir}" | docker login $REGISTRY -u "${user_ocir}" --password-stdin
+
+  - type: Command
+    name: 🔐 Login a Docker Hub
+    command: |
+      echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
+
+  - type: Command
+    name: 🛠️ Build y Push de imagen Spring Boot
+    command: |
+      cd MtdrSpring/backend
+      docker build -t $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH} .
+      docker push $REGISTRY/$NAMESPACE/$REPO:${BUILDRUN_HASH}
+
+outputArtifacts:
+  - name: todolist-image
+    type: DOCKER_IMAGE
+    location: ${REGISTRY}/${NAMESPACE}/${REPO}:${BUILDRUN_HASH}
