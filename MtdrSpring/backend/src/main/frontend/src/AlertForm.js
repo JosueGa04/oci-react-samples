@@ -12,56 +12,63 @@ import {
   Typography,
 } from "@mui/material";
 
-const ISSUES_API_URL = "/issues";
-const USERS_API_URL = "/users"; // Nueva URL para obtener usuarios
+const USERS_API_URL = "/users";
 
-function AlertForm(props) {
+function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
   const [alertData, setAlertData] = useState({
     message: "",
     taskId: "",
     task: "",
     projectId: "",
     userId: "",
-    priority: "MEDIA",
-    scheduledTime: new Date().toISOString().slice(0, 16),
+    priority: "MEDIUM",
+    scheduledTime: new Date().toISOString(),
   });
 
-  const [issues, setIssues] = useState([]);
-  const [users, setUsers] = useState([]); // Nuevo estado para usuarios
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false); // Nuevo estado para carga de usuarios
-  const [error, setError] = useState(null);
-  const [userError, setUserError] = useState(null); // Nuevo estado para errores de usuarios
+  const [users, setUsers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [userError, setUserError] = useState(null);
 
+  // Load users first
   useEffect(() => {
-    loadIssues();
-    loadUsers(); // Cargar usuarios al iniciar
+    loadUsers();
   }, []);
 
-  function loadIssues() {
-    setIsLoading(true);
-    setError(null);
+  // Update form data when users are loaded and issue is selected
+  useEffect(() => {
+    if (selectedIssue && users.length > 0) {
+      const assignedUser = users.find(
+        (user) => user.userId.toString() === selectedIssue.assignee?.toString()
+      );
 
-    fetch(ISSUES_API_URL)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            `Error en la respuesta: ${response.status} ${response.statusText}`
-          );
-        }
-        return response.json();
-      })
-      .then((result) => {
-        setIsLoading(false);
-        // Filter only non-completed issues
-        const pendingIssues = result.filter((issue) => !issue.done);
-        setIssues(pendingIssues);
-      })
-      .catch((error) => {
-        console.error("Error cargando issues:", error);
-        setIsLoading(false);
-        setError(error);
-      });
+      setAlertData((prevData) => ({
+        ...prevData,
+        taskId: selectedIssue.issueId,
+        task: selectedIssue.issueTitle,
+        projectId: selectedIssue.idSprint || "",
+        userId: assignedUser ? assignedUser.userId.toString() : "",
+        message: `Recordatorio: La tarea "${
+          selectedIssue.issueTitle
+        }" vence en ${getDaysUntilDue(selectedIssue.dueDate)} días`,
+        priority: getPriorityFromDueDate(selectedIssue.dueDate),
+      }));
+    }
+  }, [selectedIssue, users]);
+
+  function getDaysUntilDue(dueDate) {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }
+
+  function getPriorityFromDueDate(dueDate) {
+    const daysUntilDue = getDaysUntilDue(dueDate);
+    if (daysUntilDue < 0) return "ALTA";
+    if (daysUntilDue <= 3) return "ALTA";
+    if (daysUntilDue <= 7) return "MEDIA";
+    return "BAJA";
   }
 
   function loadUsers() {
@@ -78,13 +85,13 @@ function AlertForm(props) {
         return response.json();
       })
       .then((result) => {
-        setIsLoadingUsers(false);
         setUsers(result);
+        setIsLoadingUsers(false);
       })
       .catch((error) => {
         console.error("Error cargando usuarios:", error);
-        setIsLoadingUsers(false);
         setUserError(error);
+        setIsLoadingUsers(false);
       });
   }
 
@@ -96,53 +103,26 @@ function AlertForm(props) {
     }));
   }
 
-  function handleIssueSelection(e) {
-    const issueId = e.target.value;
-
-    if (!issueId) {
-      setAlertData((prevData) => ({
-        ...prevData,
-        taskId: "",
-        task: "",
-        projectId: "",
-      }));
-      return;
-    }
-
-    const selectedIssue = issues.find((issue) => issue.issueId === issueId);
-
-    if (selectedIssue) {
-      setAlertData((prevData) => ({
-        ...prevData,
-        taskId: selectedIssue.issueId,
-        task: selectedIssue.issueTitle,
-        projectId: selectedIssue.idSprint || "", // Using sprint ID as project ID
-      }));
-    }
-  }
-
   function handleSubmit(e) {
     e.preventDefault();
     if (!alertData.message.trim()) {
-      alert("El mensaje de alerta es obligatorio.");
+      alert("Alert message is required.");
       return;
     }
 
     if (!alertData.taskId && !alertData.task.trim()) {
-      alert(
-        "Por favor, seleccione una tarea o complete los campos de tarea manualmente."
-      );
+      alert("Please select a task or complete the task fields manually.");
       return;
     }
 
     if (!alertData.userId) {
-      alert("Por favor, seleccione un usuario para enviar la alerta.");
+      alert("Please select a user to send the alert to.");
       return;
     }
 
     const adjustedAlertData = {
       ...alertData,
-      scheduledTime: new Date(alertData.scheduledTime).toISOString(),
+      scheduledTime: new Date().toISOString(),
     };
 
     fetch("/alerts", {
@@ -153,241 +133,100 @@ function AlertForm(props) {
       .then((response) => {
         if (!response.ok) {
           throw new Error(
-            `Error en la respuesta: ${response.status} ${response.statusText}`
+            `Response error: ${response.status} ${response.statusText}`
           );
         }
         return response.json();
       })
       .then((savedAlert) => {
-        console.log("Alerta guardada:", savedAlert);
-        props.onAlertCreated(savedAlert);
-        props.onClose();
+        console.log("Alert saved:", savedAlert);
+        onAlertCreated(savedAlert);
+        onClose();
       })
       .catch((error) => {
-        console.error("Error al guardar la alerta:", error);
-        alert("Error al guardar la alerta: " + error.message);
-      });
-  }
-
-  function handleSendNow(e) {
-    e.preventDefault();
-    if (!alertData.message.trim()) {
-      alert("El mensaje de alerta es obligatorio.");
-      return;
-    }
-
-    if (!alertData.taskId && !alertData.task.trim()) {
-      alert(
-        "Por favor, seleccione una tarea o complete los campos de tarea manualmente."
-      );
-      return;
-    }
-
-    if (!alertData.userId) {
-      alert("Por favor, seleccione un usuario para enviar la alerta.");
-      return;
-    }
-
-    const immediateAlertData = {
-      ...alertData,
-      scheduledTime: new Date().toISOString(),
-    };
-
-    fetch("/alerts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(immediateAlertData),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            `Error en la respuesta: ${response.status} ${response.statusText}`
-          );
-        }
-        return response.json();
-      })
-      .then((savedAlert) => {
-        console.log("Alerta enviada inmediatamente:", savedAlert);
-        props.onAlertCreated(savedAlert);
-        props.onClose();
-      })
-      .catch((error) => {
-        console.error("Error al enviar la alerta:", error);
-        alert("Error al enviar la alerta: " + error.message);
+        console.error("Error saving alert:", error);
+        alert("Error saving alert: " + error.message);
       });
   }
 
   function retryLoadUsers() {
     loadUsers();
   }
-  
+
+  // Find the assigned user's name
+  const assignedUser = users.find(
+    (user) => user.userId.toString() === alertData.userId
+  );
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-      {isLoading ? (
-        <Box sx={{ textAlign: "center", p: 3 }}>
-          <CircularProgress size={24} />
-          <p>Cargando tareas...</p>
-        </Box>
-      ) : error ? (
-        <Box sx={{ color: "red", mb: 2 }}>
-          <p>Error: {error.message}</p>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={loadIssues}
-            size="small"
-            sx={{ mt: 1 }}
-          >
-            Reintentar
-          </Button>
-        </Box>
-      ) : (
-        <FormControl fullWidth margin="normal">
-          <InputLabel>Seleccionar Tarea</InputLabel>
-          <Select
-            name="selectedTask"
-            value={alertData.taskId}
-            onChange={handleIssueSelection}
-          >
-            <MenuItem value="">-- Seleccionar una tarea --</MenuItem>
-            {issues.map((issue) => (
-              <MenuItem key={issue.issueId} value={issue.issueId}>
-                {issue.issueTitle}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      )}
-
-      <TextField
-        fullWidth
-        margin="normal"
-        label="Mensaje de Alerta"
-        name="message"
-        value={alertData.message}
-        onChange={handleChange}
-        required
-        multiline
-        rows={4}
-      />
-
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid item xs={6}>
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            Task Information
+          </Typography>
           <TextField
             fullWidth
-            label="Task ID"
-            name="taskId"
-            value={alertData.taskId}
-            onChange={handleChange}
-            disabled={!error}
-          />
-        </Grid>
-        <Grid item xs={6}>
-          <TextField
-            fullWidth
-            label="Tarea"
-            name="task"
+            label="Task Title"
             value={alertData.task}
-            onChange={handleChange}
-            disabled={!error}
-            required={error}
+            disabled
+            sx={{ mb: 2 }}
           />
-        </Grid>
-        <Grid item xs={6}>
           <TextField
             fullWidth
-            label="Project ID"
-            name="projectId"
-            value={alertData.projectId}
-            onChange={handleChange}
+            label="Assigned User"
+            value={assignedUser ? assignedUser.userName : "Loading..."}
+            disabled
           />
         </Grid>
-        <Grid item xs={6}>
-          <FormControl fullWidth>
-            <InputLabel>Usuario</InputLabel>
-            {isLoadingUsers ? (
-              <Box sx={{ display: "flex", alignItems: "center", p: 2 }}>
-                <CircularProgress size={24} />
-                <Typography variant="caption" sx={{ ml: 1 }}>
-                  Cargando usuarios...
-                </Typography>
-              </Box>
-            ) : userError ? (
-              <Box>
-                <Typography color="error" variant="caption">
-                  Error al cargar usuarios: {userError.message}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={retryLoadUsers}
-                  sx={{ mt: 1, display: "block" }}
-                >
-                  Reintentar
-                </Button>
-              </Box>
-            ) : (
-              <Select
-                name="userId"
-                value={alertData.userId}
-                onChange={handleChange}
-                required
-              >
-                <MenuItem value="">-- Seleccionar un usuario --</MenuItem>
-                {users.map((user) => (
-                  <MenuItem key={user.userId} value={user.userId.toString()}>
-                    {user.userName}
-                  </MenuItem>
-                ))}
-              </Select>
-            )}
-          </FormControl>
-        </Grid>
-        <Grid item xs={6}>
-          <FormControl fullWidth>
-            <InputLabel>Prioridad</InputLabel>
+
+        <Grid item xs={12}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            Alert Details
+          </Typography>
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Alert Message"
+            name="message"
+            value={alertData.message}
+            onChange={handleChange}
+            required
+            multiline
+            rows={4}
+          />
+
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Priority</InputLabel>
             <Select
               name="priority"
               value={alertData.priority}
               onChange={handleChange}
             >
-              <MenuItem value="BAJA">Baja</MenuItem>
-              <MenuItem value="MEDIA">Media</MenuItem>
-              <MenuItem value="ALTA">Alta</MenuItem>
+              <MenuItem value="LOW">Low</MenuItem>
+              <MenuItem value="MEDIUM">Medium</MenuItem>
+              <MenuItem value="HIGH">High</MenuItem>
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={6}>
-          <TextField
-            fullWidth
-            label="Fecha Programada"
-            name="scheduledTime"
-            type="datetime-local"
-            value={alertData.scheduledTime}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true }}
-            required
-          />
-        </Grid>
       </Grid>
 
-
       <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "flex-end" }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSendNow}
-          sx={{ minWidth: "120px" }}
-        >
-          Enviar Ahora
+        <Button variant="outlined" onClick={onClose} sx={{ minWidth: "120px" }}>
+          Cancel
         </Button>
         <Button
           variant="contained"
-          color="primary"
           type="submit"
-          sx={{ minWidth: "120px" }}
+          sx={{
+            minWidth: "120px",
+            backgroundColor: "#c74634",
+            "&:hover": {
+              backgroundColor: "#b13d2b",
+            },
+          }}
         >
-          Programar
+          Send Alert
         </Button>
       </Box>
     </Box>

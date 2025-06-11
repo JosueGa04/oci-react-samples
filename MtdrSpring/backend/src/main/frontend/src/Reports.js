@@ -24,6 +24,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { PieChart, Pie, Cell } from "recharts";
 
 const API_URL = "/issues";
 const USERS_URL = "/users";
@@ -242,36 +243,114 @@ const Reports = () => {
     return colors;
   };
 
+  const getEstimationVsHoursData = () => {
+    const completedTasks = issues.filter((issue) => issue.status === 1);
+    // Group by sprint, then by task
+    let data = [];
+    completedTasks.forEach((task) => {
+      if (!task.idSprint) return;
+      const sprint = sprints.find((s) => s.idSprint === task.idSprint);
+      data.push({
+        sprintTitle: sprint ? sprint.sprintTitle : `Sprint ${task.idSprint}`,
+        task: task.issueTitle,
+        estimation: task.estimation || 0,
+        hoursWorked: task.hoursWorked || 0,
+      });
+    });
+    return data;
+  };
+
+  // Pie data for Estimation vs Hours Worked
+  const getEstimationVsHoursPieData = () => {
+    const completedTasks = issues.filter((issue) => issue.status === 1);
+    let totalEstimation = 0;
+    let totalHoursWorked = 0;
+    completedTasks.forEach((task) => {
+      totalEstimation += Number(task.estimation) || 0;
+      totalHoursWorked += Number(task.hoursWorked) || 0;
+    });
+    return [
+      { name: "Estimated Hours", value: totalEstimation },
+      { name: "Actual Hours Worked", value: totalHoursWorked },
+    ];
+  };
+
   const renderCompletedTasksTable = () => {
     const tasksBySprint = getCompletedTasksBySprint();
+    const pieData = getEstimationVsHoursPieData();
+    const pieColors = ["#0072C6", "#D50000"];
 
     return (
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Sprint</TableCell>
-              <TableCell>Task Name</TableCell>
-              <TableCell>Developer</TableCell>
-              <TableCell>Estimated Hours</TableCell>
-              <TableCell>Actual Hours</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {Object.entries(tasksBySprint).map(([sprintId, sprintData]) =>
-              sprintData.tasks.map((task) => (
-                <TableRow key={task.issueId}>
-                  <TableCell>{sprintData.sprintTitle}</TableCell>
-                  <TableCell>{task.issueTitle}</TableCell>
-                  <TableCell>{getUserName(task.assignee)}</TableCell>
-                  <TableCell>{task.estimation}</TableCell>
-                  <TableCell>{task.hoursWorked}</TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <>
+        <TableContainer component={Paper} sx={{ mb: 4 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Sprint</TableCell>
+                <TableCell>Task Name</TableCell>
+                <TableCell>Developer</TableCell>
+                <TableCell>Estimated Hours</TableCell>
+                <TableCell>Actual Hours</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Object.entries(tasksBySprint).map(([sprintId, sprintData]) =>
+                sprintData.tasks.map((task) => (
+                  <TableRow key={task.issueId}>
+                    <TableCell>{sprintData.sprintTitle}</TableCell>
+                    <TableCell>{task.issueTitle}</TableCell>
+                    <TableCell>{getUserName(task.assignee)}</TableCell>
+                    <TableCell>{task.estimation}</TableCell>
+                    <TableCell>{task.hoursWorked}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        {/* Estimation vs Hours Worked Pie Chart */}
+        <Typography
+          variant="h6"
+          sx={{ mb: 2, color: "#312d2a", fontWeight: 600 }}
+        >
+          Estimation vs Hours Worked (All Completed Tasks)
+        </Typography>
+        <Box
+          sx={{
+            height: 340,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <ResponsiveContainer width="50%" height="100%">
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={110}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) =>
+                  `${name}: ${(percent * 100).toFixed(0)}%`
+                }
+              >
+                {pieData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={pieColors[index % pieColors.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </Box>
+      </>
     );
   };
 
@@ -414,7 +493,15 @@ const Reports = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3, color: "#312d2a" }}>
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 700,
+          color: "#312d2a",
+          textTransform: "uppercase",
+          letterSpacing: "0.5px",
+        }}
+      >
         Reports
       </Typography>
 
