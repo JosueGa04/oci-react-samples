@@ -12,7 +12,6 @@ import {
   Typography,
 } from "@mui/material";
 
-const ISSUES_API_URL = "/issues";
 const USERS_API_URL = "/users";
 
 function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
@@ -26,31 +25,35 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
     scheduledTime: new Date().toISOString(),
   });
 
-  const [issues, setIssues] = useState([]);
   const [users, setUsers] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [error, setError] = useState(null);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [userError, setUserError] = useState(null);
 
+  // Load users first
   useEffect(() => {
-    loadIssues();
     loadUsers();
+  }, []);
 
-    // If a selected issue is provided, pre-fill the form
-    if (selectedIssue) {
+  // Update form data when users are loaded and issue is selected
+  useEffect(() => {
+    if (selectedIssue && users.length > 0) {
+      const assignedUser = users.find(
+        (user) => user.userId.toString() === selectedIssue.assignee?.toString()
+      );
+
       setAlertData((prevData) => ({
         ...prevData,
         taskId: selectedIssue.issueId,
         task: selectedIssue.issueTitle,
         projectId: selectedIssue.idSprint || "",
+        userId: assignedUser ? assignedUser.userId.toString() : "",
         message: `Recordatorio: La tarea "${
           selectedIssue.issueTitle
         }" vence en ${getDaysUntilDue(selectedIssue.dueDate)} días`,
         priority: getPriorityFromDueDate(selectedIssue.dueDate),
       }));
     }
-  }, [selectedIssue]);
+  }, [selectedIssue, users]);
 
   function getDaysUntilDue(dueDate) {
     const today = new Date();
@@ -68,31 +71,6 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
     return "BAJA";
   }
 
-  function loadIssues() {
-    setIsLoading(true);
-    setError(null);
-
-    fetch(ISSUES_API_URL)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            `Error en la respuesta: ${response.status} ${response.statusText}`
-          );
-        }
-        return response.json();
-      })
-      .then((result) => {
-        setIsLoading(false);
-        const pendingIssues = result.filter((issue) => !issue.done);
-        setIssues(pendingIssues);
-      })
-      .catch((error) => {
-        console.error("Error cargando issues:", error);
-        setIsLoading(false);
-        setError(error);
-      });
-  }
-
   function loadUsers() {
     setIsLoadingUsers(true);
     setUserError(null);
@@ -107,13 +85,13 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
         return response.json();
       })
       .then((result) => {
-        setIsLoadingUsers(false);
         setUsers(result);
+        setIsLoadingUsers(false);
       })
       .catch((error) => {
         console.error("Error cargando usuarios:", error);
-        setIsLoadingUsers(false);
         setUserError(error);
+        setIsLoadingUsers(false);
       });
   }
 
@@ -125,35 +103,6 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
     }));
   }
 
-  function handleIssueSelection(e) {
-    const issueId = e.target.value;
-
-    if (!issueId) {
-      setAlertData((prevData) => ({
-        ...prevData,
-        taskId: "",
-        task: "",
-        projectId: "",
-      }));
-      return;
-    }
-
-    const selectedIssue = issues.find((issue) => issue.issueId === issueId);
-
-    if (selectedIssue) {
-      setAlertData((prevData) => ({
-        ...prevData,
-        taskId: selectedIssue.issueId,
-        task: selectedIssue.issueTitle,
-        projectId: selectedIssue.idSprint || "",
-        message: `Recordatorio: La tarea "${
-          selectedIssue.issueTitle
-        }" vence en ${getDaysUntilDue(selectedIssue.dueDate)} días`,
-        priority: getPriorityFromDueDate(selectedIssue.dueDate),
-      }));
-    }
-  }
-
   function handleSubmit(e) {
     e.preventDefault();
     if (!alertData.message.trim()) {
@@ -162,9 +111,7 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
     }
 
     if (!alertData.taskId && !alertData.task.trim()) {
-      alert(
-        "Please select a task or complete the task fields manually."
-      );
+      alert("Please select a task or complete the task fields manually.");
       return;
     }
 
@@ -206,121 +153,50 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
     loadUsers();
   }
 
+  // Find the assigned user's name
+  const assignedUser = users.find(
+    (user) => user.userId.toString() === alertData.userId
+  );
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-      {isLoading ? (
-        <Box sx={{ textAlign: "center", p: 3 }}>
-          <CircularProgress size={24} />
-          <p>Loading tasks...</p>
-        </Box>
-      ) : error ? (
-        <Box sx={{ color: "red", mb: 2 }}>
-          <p>Error: {error.message}</p>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={loadIssues}
-            size="small"
-            sx={{ mt: 1 }}
-          >
-            Retry
-          </Button>
-        </Box>
-      ) : (
-        <FormControl fullWidth margin="normal">
-          <InputLabel>Select Task</InputLabel>
-          <Select
-            name="selectedTask"
-            value={alertData.taskId}
-            onChange={handleIssueSelection}
-          >
-            <MenuItem value="">-- Select a task --</MenuItem>
-            {issues.map((issue) => (
-              <MenuItem key={issue.issueId} value={issue.issueId}>
-                {issue.issueTitle}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      )}
-
-      <TextField
-        fullWidth
-        margin="normal"
-        label="Alert Message"
-        name="message"
-        value={alertData.message}
-        onChange={handleChange}
-        required
-        multiline
-        rows={4}
-      />
-
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid item xs={6}>
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            Task Information
+          </Typography>
           <TextField
             fullWidth
-            label="Task ID"
-            name="taskId"
-            value={alertData.taskId}
-            onChange={handleChange}
-            disabled={!error}
-          />
-        </Grid>
-        <Grid item xs={6}>
-          <TextField
-            fullWidth
-            label="Task"
-            name="task"
+            label="Task Title"
             value={alertData.task}
-            onChange={handleChange}
-            disabled={!error}
-            required={error}
+            disabled
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Assigned User"
+            value={assignedUser ? assignedUser.userName : "Loading..."}
+            disabled
           />
         </Grid>
-        <Grid item xs={6}>
-          <FormControl fullWidth>
-            <InputLabel>User</InputLabel>
-            {isLoadingUsers ? (
-              <Box sx={{ display: "flex", alignItems: "center", p: 2 }}>
-                <CircularProgress size={24} />
-                <Typography variant="caption" sx={{ ml: 1 }}>
-                  Loading users...
-                </Typography>
-              </Box>
-            ) : userError ? (
-              <Box>
-                <Typography color="error" variant="caption">
-                  Error loading users: {userError.message}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={retryLoadUsers}
-                  sx={{ mt: 1, display: "block" }}
-                >
-                  Retry
-                </Button>
-              </Box>
-            ) : (
-              <Select
-                name="userId"
-                value={alertData.userId}
-                onChange={handleChange}
-                required
-              >
-                <MenuItem value="">-- Select a user --</MenuItem>
-                {users.map((user) => (
-                  <MenuItem key={user.userId} value={user.userId.toString()}>
-                    {user.userName}
-                  </MenuItem>
-                ))}
-              </Select>
-            )}
-          </FormControl>
-        </Grid>
-        <Grid item xs={6}>
-          <FormControl fullWidth>
+
+        <Grid item xs={12}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            Alert Details
+          </Typography>
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Alert Message"
+            name="message"
+            value={alertData.message}
+            onChange={handleChange}
+            required
+            multiline
+            rows={4}
+          />
+
+          <FormControl fullWidth sx={{ mt: 2 }}>
             <InputLabel>Priority</InputLabel>
             <Select
               name="priority"
@@ -336,11 +212,19 @@ function AlertForm({ onClose, onAlertCreated, selectedIssue = null }) {
       </Grid>
 
       <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "flex-end" }}>
+        <Button variant="outlined" onClick={onClose} sx={{ minWidth: "120px" }}>
+          Cancel
+        </Button>
         <Button
           variant="contained"
-          color="primary"
           type="submit"
-          sx={{ minWidth: "120px" }}
+          sx={{
+            minWidth: "120px",
+            backgroundColor: "#c74634",
+            "&:hover": {
+              backgroundColor: "#b13d2b",
+            },
+          }}
         >
           Send Alert
         </Button>

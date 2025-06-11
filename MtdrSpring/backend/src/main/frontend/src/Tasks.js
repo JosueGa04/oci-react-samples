@@ -54,6 +54,11 @@ const Tasks = () => {
     idSprint: "",
   });
 
+  // Filtros
+  const [filterSprint, setFilterSprint] = useState("");
+  const [filterAssignee, setFilterAssignee] = useState("");
+  const [filterTeam, setFilterTeam] = useState("");
+
   const theme = useTheme();
 
   useEffect(() => {
@@ -144,12 +149,17 @@ const Tasks = () => {
       const url = editingTask ? `${API_URL}/${editingTask.issueId}` : API_URL;
       const method = editingTask ? "PUT" : "POST";
 
+      let bodyData = { ...formData };
+      if (editingTask && editingTask.hoursWorked !== undefined) {
+        bodyData.hoursWorked = editingTask.hoursWorked;
+      }
+
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(bodyData),
       });
 
       if (response.ok) {
@@ -198,6 +208,17 @@ const Tasks = () => {
     }
   };
 
+  // Filtrado de tareas
+  const filteredTasks = tasks.filter((task) => {
+    let match = true;
+    if (filterSprint && String(task.idSprint) !== String(filterSprint))
+      match = false;
+    if (filterAssignee && String(task.assignee) !== String(filterAssignee))
+      match = false;
+    if (filterTeam && String(task.team) !== String(filterTeam)) match = false;
+    return match;
+  });
+
   return (
     <Box
       sx={{
@@ -242,6 +263,69 @@ const Tasks = () => {
         </Button>
       </Box>
 
+      {/* Filtros */}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={4} md={3}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Sprint</InputLabel>
+            <Select
+              value={filterSprint}
+              label="Sprint"
+              onChange={(e) => setFilterSprint(e.target.value)}
+            >
+              <MenuItem value="">
+                <em>All</em>
+              </MenuItem>
+              {sprints.map((sprint) => (
+                <MenuItem key={sprint.idSprint} value={sprint.idSprint}>
+                  {sprint.sprintTitle || `Sprint ${sprint.idSprint}`}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={4} md={3}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Assignee</InputLabel>
+            <Select
+              value={filterAssignee}
+              label="Assignee"
+              onChange={(e) => setFilterAssignee(e.target.value)}
+            >
+              <MenuItem value="">
+                <em>All</em>
+              </MenuItem>
+              {users.map((user) => (
+                <MenuItem key={user.userId} value={user.userId}>
+                  {user.userName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={4} md={3}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Team</InputLabel>
+            <Select
+              value={filterTeam}
+              label="Team"
+              onChange={(e) => setFilterTeam(e.target.value)}
+            >
+              <MenuItem value="">
+                <em>All</em>
+              </MenuItem>
+              {[...new Set(tasks.map((t) => t.team).filter(Boolean))].map(
+                (team) => (
+                  <MenuItem key={team} value={team}>
+                    {team}
+                  </MenuItem>
+                )
+              )}
+            </Select>
+          </FormControl>
+        </Grid>
+      </Grid>
+
       <Paper
         sx={{
           mt: 2,
@@ -275,7 +359,7 @@ const Tasks = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {tasks.map((task) => (
+              {filteredTasks.map((task) => (
                 <TableRow key={task.issueId}>
                   <TableCell
                     sx={{

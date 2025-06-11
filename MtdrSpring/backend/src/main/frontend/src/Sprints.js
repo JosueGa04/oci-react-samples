@@ -321,7 +321,7 @@ const Sprints = () => {
 
       {selectedSprint && (
         <>
-          <Grid container spacing={2} sx={{ mb: 4 }}>
+          <Grid container spacing={2} sx={{ mb: 6 }}>
             <Grid item xs={12} md={6}>
               <Paper
                 sx={{
@@ -329,23 +329,44 @@ const Sprints = () => {
                   borderRadius: "16px",
                   boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                   height: "100%",
+                  position: "relative",
                 }}
               >
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Sprint Details
-                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    mb: 1,
+                  }}
+                >
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Sprint Details
+                  </Typography>
+                  <IconButton
+                    aria-label="Edit Sprint"
+                    size="small"
+                    onClick={() => handleOpenDialog(selectedSprint)}
+                    sx={{ ml: 1 }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </Box>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <Typography variant="h5" sx={{ mb: 2 }}>
-                      {selectedSprint.sprintTitle || `Sprint ${selectedSprint.idSprint}`}
+                      {selectedSprint.sprintTitle ||
+                        `Sprint ${selectedSprint.idSprint}`}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body1">
-                      <strong>Start Date:</strong> {formatDate(selectedSprint.startDate)}
+                      <strong>Start Date:</strong>{" "}
+                      {formatDate(selectedSprint.startDate)}
                     </Typography>
                     <Typography variant="body1">
-                      <strong>End Date:</strong> {formatDate(selectedSprint.endDate)}
+                      <strong>End Date:</strong>{" "}
+                      {formatDate(selectedSprint.endDate)}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -357,7 +378,14 @@ const Sprints = () => {
               </Paper>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Box sx={{ display: "flex", justifyContent: "center", height: "100%", alignItems: "center" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  height: "100%",
+                  alignItems: "center",
+                }}
+              >
                 <PieChart width={300} height={250}>
                   <Pie
                     data={getPieChartData()}
@@ -367,10 +395,15 @@ const Sprints = () => {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, value, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                    label={({ name, value, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(1)}%`
+                    }
                   >
                     {getPieChartData().map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={pieColors[index % pieColors.length]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -393,6 +426,7 @@ const Sprints = () => {
               borderRadius: "16px",
               boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
               overflow: "hidden",
+              mt: 6,
             }}
           >
             <Table>

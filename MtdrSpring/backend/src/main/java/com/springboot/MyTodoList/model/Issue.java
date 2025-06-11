@@ -45,6 +45,17 @@ public class Issue {
     private String completionNotes;
 
     // Getters and Setters
+
+    @Column(name = "LAST_UPDATE_DATE")
+    private Date lastUpdateDate;
+    
+    // Getter y Setter
+    public Date getLastUpdateDate() { 
+        return lastUpdateDate; 
+    }
+    public void setLastUpdateDate(Date lastUpdateDate) { 
+        this.lastUpdateDate = lastUpdateDate; 
+    }
     public Long getIssueId() {
         return issueId;
     }
