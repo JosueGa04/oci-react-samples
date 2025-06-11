@@ -278,7 +278,7 @@ const Dashboard = ({ children }) => {
     { text: "Sprints", icon: <TimelineIcon />, view: "sprints" },
     { text: "Reports", icon: <AssessmentIcon />, view: "reports" },
     { text: "Alerts", icon: <NotificationsIcon />, view: "alerts" },
-    { text: "Settings", icon: <SettingsIcon />, view: "settings" },
+    // { text: "Settings", icon: <SettingsIcon />, view: "settings" },
   ];
 
   const renderContent = () => {
