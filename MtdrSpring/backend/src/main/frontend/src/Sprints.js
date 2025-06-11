@@ -321,7 +321,6 @@ const Sprints = () => {
 
       {selectedSprint && (
         <>
-<<<<<<< newFeatures
           <Grid container spacing={2} sx={{ mb: 6 }}>
             <Grid item xs={12} md={6}>
               <Paper
@@ -418,41 +417,6 @@ const Sprints = () => {
                   />
                 </PieChart>
               </Box>
-=======
-          <Paper
-            sx={{
-              p: 3,
-              mb: 4,
-              borderRadius: "16px",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-            }}
-          >
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Sprint Detalle
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Typography variant="h5" sx={{ mb: 2 }}>
-                  {selectedSprint.sprintTitle ||
-                    `Sprint ${selectedSprint.idSprint}`}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body1">
-                  <strong>Start Date:</strong>{" "}
-                  {formatDate(selectedSprint.startDate)}
-                </Typography>
-                <Typography variant="body1">
-                  <strong>End Date:</strong>{" "}
-                  {formatDate(selectedSprint.endDate)}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body1">
-                  <strong>Goal:</strong> {selectedSprint.sprintGoal}
-                </Typography>
-              </Grid>
->>>>>>> deploy
             </Grid>
           </Grid>
 
