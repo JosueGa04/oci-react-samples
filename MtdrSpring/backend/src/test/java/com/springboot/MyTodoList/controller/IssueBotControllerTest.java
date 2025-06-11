@@ -1,8 +1,10 @@
 package com.springboot.MyTodoList.controller;
 
 import com.springboot.MyTodoList.model.Issue;
+import com.springboot.MyTodoList.model.Sprint;
 import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.service.IssueService;
+import com.springboot.MyTodoList.service.SprintService;
 import com.springboot.MyTodoList.service.UserService;
 import com.springboot.MyTodoList.util.BotLabels;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +36,9 @@ class IssueBotControllerTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private SprintService sprintService;
+
     private IssueBotController botController;
     private static final String BOT_TOKEN = "test_token";
     private static final String BOT_NAME = "test_bot";
@@ -41,7 +46,7 @@ class IssueBotControllerTest {
     @BeforeEach
     void setUp() throws TelegramApiException {
         MockitoAnnotations.openMocks(this);
-        botController = spy(new IssueBotController(BOT_TOKEN, BOT_NAME, issueService, userService));
+        botController = spy(new IssueBotController(BOT_TOKEN, BOT_NAME, issueService, userService, sprintService));
         doReturn(new Message()).when(botController).execute(any(SendMessage.class));
     }
 
@@ -59,10 +64,16 @@ class IssueBotControllerTest {
         developer.setUserRol("Engineer");
         developer.setUserName("Test Developer");
 
+        // Mock sprint
+        Sprint sprint = new Sprint();
+        sprint.setIdSprint(1L);
+        sprint.setSprintTitle("Current Sprint");
+
         // Setup mocks
         when(userService.findByTelegramId(123L)).thenReturn(projectManager);
         when(userService.getUsersByRole("Engineer")).thenReturn(Arrays.asList(developer));
         when(userService.getUserById(1L)).thenReturn(Optional.of(developer));
+        when(sprintService.getMostRecentSprint()).thenReturn(Optional.of(sprint));
         when(issueService.createIssue(any(Issue.class))).thenReturn(new Issue());
 
         // Create base update with user info
@@ -71,7 +82,7 @@ class IssueBotControllerTest {
 
         // Test task creation steps
         // 1. Start task creation
-        message.setText(BotLabels.CREATE_NEW_TASK.getLabel());
+        message.setText(BotLabels.CREATE_NEW_TASK.getDisplayText());
         botController.onUpdateReceived(update);
 
         // 2. Enter title
@@ -96,6 +107,7 @@ class IssueBotControllerTest {
 
         // Verify issue creation
         verify(issueService, times(1)).createIssue(any(Issue.class));
+        verify(sprintService, times(1)).getMostRecentSprint();
         verify(botController, atLeastOnce()).execute(any(SendMessage.class));
     }
 
@@ -128,7 +140,7 @@ class IssueBotControllerTest {
         Message message = update.getMessage();
         
         // Send command to view completed tasks
-        message.setText(BotLabels.MY_ASSIGNED_ISSUES.getLabel());
+        message.setText(BotLabels.MY_ASSIGNED_ISSUES.getDisplayText());
         botController.onUpdateReceived(update);
 
         // Verify service calls
@@ -168,7 +180,7 @@ class IssueBotControllerTest {
         Message message = update.getMessage();
         
         // Send command to view developer stats
-        message.setText(BotLabels.DEVELOPER_STATS.getLabel());
+        message.setText(BotLabels.DEVELOPER_STATS.getDisplayText());
         botController.onUpdateReceived(update);
 
         // Select developer

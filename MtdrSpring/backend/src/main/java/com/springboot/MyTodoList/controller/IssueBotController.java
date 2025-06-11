@@ -25,8 +25,10 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import com.springboot.MyTodoList.model.Issue;
 import com.springboot.MyTodoList.model.User;
+import com.springboot.MyTodoList.model.Sprint;
 import com.springboot.MyTodoList.service.IssueService;
 import com.springboot.MyTodoList.service.UserService;
+import com.springboot.MyTodoList.service.SprintService;
 import com.springboot.MyTodoList.util.BotCommands;
 import com.springboot.MyTodoList.util.BotHelper;
 import com.springboot.MyTodoList.util.BotLabels;
@@ -42,6 +44,7 @@ public class IssueBotController extends TelegramLongPollingBot {
     private static final Logger logger = LoggerFactory.getLogger(IssueBotController.class);
     private IssueService issueService;
     private UserService userService;
+    private SprintService sprintService;
     private String botName;
     private Map<Long, TaskCreationState> taskCreationStates = new HashMap<>();
     private Map<Long, CommandState> commandStates = new HashMap<>();
@@ -79,15 +82,18 @@ public class IssueBotController extends TelegramLongPollingBot {
         TaskCreationState() {
             this.currentStep = TaskCreationStep.TITLE;
             this.newIssue = new Issue();
+            this.newIssue.setIssueType("Task"); // Set default issue type
+            this.newIssue.setStatus(0); // Set initial status as not completed
         }
     }
 
-    public IssueBotController(String botToken, String botName, IssueService issueService, UserService userService) {
+    public IssueBotController(String botToken, String botName, IssueService issueService, UserService userService, SprintService sprintService) {
         super(botToken);
         logger.info("Bot Token: " + botToken);
         logger.info("Bot name: " + botName);
         this.issueService = issueService;
         this.userService = userService;
+        this.sprintService = sprintService;
         this.botName = botName;
     }
 
@@ -107,6 +113,14 @@ public class IssueBotController extends TelegramLongPollingBot {
         long telegramId = update.getMessage().getFrom().getId();
 
         try {
+            // Convert display text to command if it matches any button
+            for (BotLabels label : BotLabels.values()) {
+                if (messageText.equals(label.getDisplayText())) {
+                    messageText = label.getCommand();
+                    break;
+                }
+            }
+
             // Check if user is in task creation mode
             if (taskCreationStates.containsKey(chatId)) {
                 handleTaskCreation(chatId, telegramId, messageText);
@@ -120,15 +134,15 @@ public class IssueBotController extends TelegramLongPollingBot {
             }
 
             // Handle commands from keyboard buttons
-            if (messageText.equals(BotLabels.MY_ASSIGNED_ISSUES.getLabel())) {
+            if (messageText.equals(BotLabels.MY_ASSIGNED_ISSUES.getCommand())) {
                 showAssignedIssues(chatId, telegramId);
-            } else if (messageText.equals(BotLabels.COMPLETE_ISSUE.getLabel())) {
+            } else if (messageText.equals(BotLabels.COMPLETE_ISSUE.getCommand())) {
                 startCompleteIssueFlow(chatId);
-            } else if (messageText.equals(BotLabels.DEVELOPER_STATS.getLabel())) {
+            } else if (messageText.equals(BotLabels.DEVELOPER_STATS.getCommand())) {
                 startDevStatsFlow(chatId);
-            } else if (messageText.equals(BotLabels.SHOW_DEVELOPERS.getLabel())) {
+            } else if (messageText.equals(BotLabels.SHOW_DEVELOPERS.getCommand())) {
                 showDevelopersList(chatId, telegramId);
-            } else if (messageText.equals(BotLabels.CREATE_NEW_TASK.getLabel())) {
+            } else if (messageText.equals(BotLabels.CREATE_NEW_TASK.getCommand())) {
                 startTaskCreation(chatId, telegramId);
             } else if (messageText.equals("/start")) {
                 startCommandReceived(chatId);
@@ -204,7 +218,14 @@ public class IssueBotController extends TelegramLongPollingBot {
                         Optional<User> developer = userService.getUserById(developerId);
                         if (developer.isPresent() && "ENGINEER".equalsIgnoreCase(developer.get().getUserRol())) {
                             state.newIssue.setAssignee(developerId);
-                            state.newIssue.setStatus(0); // Set initial status as not completed
+                            
+                            // Get the most recent sprint and assign it
+                            Optional<Sprint> mostRecentSprint = sprintService.getMostRecentSprint();
+                            if (mostRecentSprint.isPresent()) {
+                                state.newIssue.setIdSprint(mostRecentSprint.get().getIdSprint());
+                            } else {
+                                logger.warn("No active sprint found when creating issue");
+                            }
                             
                             // Save the new issue
                             issueService.createIssue(state.newIssue);
@@ -305,19 +326,19 @@ public class IssueBotController extends TelegramLongPollingBot {
         
         // First row
         KeyboardRow row1 = new KeyboardRow();
-        row1.add(BotLabels.MY_ASSIGNED_ISSUES.getLabel());
-        row1.add(BotLabels.COMPLETE_ISSUE.getLabel());
+        row1.add(BotLabels.MY_ASSIGNED_ISSUES.getDisplayText());
+        row1.add(BotLabels.COMPLETE_ISSUE.getDisplayText());
         keyboard.add(row1);
 
         // Second row
         KeyboardRow row2 = new KeyboardRow();
-        row2.add(BotLabels.DEVELOPER_STATS.getLabel());
-        row2.add(BotLabels.SHOW_DEVELOPERS.getLabel());
+        row2.add(BotLabels.DEVELOPER_STATS.getDisplayText());
+        row2.add(BotLabels.SHOW_DEVELOPERS.getDisplayText());
         keyboard.add(row2);
 
         // Third row (only for Project Managers)
         KeyboardRow row3 = new KeyboardRow();
-        row3.add(BotLabels.CREATE_NEW_TASK.getLabel());
+        row3.add(BotLabels.CREATE_NEW_TASK.getDisplayText());
         keyboard.add(row3);
 
         keyboardMarkup.setKeyboard(keyboard);
@@ -351,19 +372,50 @@ public class IssueBotController extends TelegramLongPollingBot {
                     .append("\n\n");
         }
         message.append("To complete an issue, use the command:\n")
-                .append("/complete <issue_id> <hours>");
+                .append("/CompleteIssue");
 
         sendMessage(chatId, message.toString());
     }
 
     private void startCompleteIssueFlow(long chatId) throws TelegramApiException {
-        commandStates.put(chatId, new CommandState(CommandType.COMPLETE_ISSUE));
-        SendMessage message = SendMessage.builder()
+        // Primero obtener el usuario actual
+        User user = userService.findByTelegramId(chatId);
+        if (user == null) {
+            sendMessage(chatId, "User not found. Please contact your administrator.");
+            return;
+        }
+
+        // Obtener las tareas asignadas pendientes
+        List<Issue> assignedIssues = issueService.getIssuesByAssignee(user.getUserId());
+        List<Issue> activeIssues = assignedIssues.stream()
+                .filter(issue -> issue.getStatus() != 1)
+                .collect(Collectors.toList());
+
+        if (activeIssues.isEmpty()) {
+            sendMessage(chatId, "You don't have any active assigned issues to complete.\nPlease select another option from the menu.");
+            return;
+        }
+
+        // Mostrar las tareas pendientes
+        StringBuilder message = new StringBuilder("📋 *Your Active Assigned Issues:*\n\n");
+        for (Issue issue : activeIssues) {
+            message.append("ID: `").append(issue.getIssueId()).append("`\n")
+                  .append("Title: ").append(issue.getIssueTitle()).append("\n")
+                  .append("Due Date: ").append(issue.getDueDate()).append("\n")
+                  .append("-------------------\n");
+        }
+        message.append("\nPlease enter the Issue ID you want to complete:");
+
+        SendMessage sendMessage = SendMessage.builder()
                 .chatId(String.valueOf(chatId))
-                .text("Please enter the Issue ID you want to complete:")
+                .text(message.toString())
+                .parseMode("Markdown")
                 .replyMarkup(createCancelKeyboard())
                 .build();
-        execute(message);
+        execute(sendMessage);
+
+        // Iniciar el flujo de completar tarea
+        commandStates.put(chatId, new CommandState(CommandType.COMPLETE_ISSUE));
     }
 
     private void startDevStatsFlow(long chatId) throws TelegramApiException {
@@ -468,6 +520,47 @@ public class IssueBotController extends TelegramLongPollingBot {
             case 0: // Issue ID
                 try {
                     Long issueId = Long.parseLong(messageText);
+                    
+                    // Validar que la tarea existe y está asignada al usuario
+                    User user = userService.findByTelegramId(telegramId);
+                    if (user == null) {
+                        sendMessage(chatId, "User not found. Please contact your administrator.");
+                        commandStates.remove(chatId);
+                        return;
+                    }
+
+                    Optional<Issue> issueOpt = issueService.getIssueById(issueId);
+                    if (!issueOpt.isPresent()) {
+                        SendMessage message = SendMessage.builder()
+                                .chatId(String.valueOf(chatId))
+                                .text("Issue ID not found. Please enter a valid Issue ID from the list above:")
+                                .replyMarkup(createCancelKeyboard())
+                                .build();
+                        execute(message);
+                        return;
+                    }
+
+                    Issue issue = issueOpt.get();
+                    if (!issue.getAssignee().equals(user.getUserId())) {
+                        SendMessage message = SendMessage.builder()
+                                .chatId(String.valueOf(chatId))
+                                .text("This issue is not assigned to you. Please enter a valid Issue ID from the list above:")
+                                .replyMarkup(createCancelKeyboard())
+                                .build();
+                        execute(message);
+                        return;
+                    }
+
+                    if (issue.getStatus() == 1) {
+                        SendMessage message = SendMessage.builder()
+                                .chatId(String.valueOf(chatId))
+                                .text("This issue is already completed. Please enter a valid Issue ID from the list above:")
+                                .replyMarkup(createCancelKeyboard())
+                                .build();
+                        execute(message);
+                        return;
+                    }
+
                     state.parameters.put("issueId", issueId.toString());
                     state.currentStep++;
                     

@@ -29,6 +29,16 @@ public class SprintService {
         return sprintRepository.findById(id);
     }
 
+    // Get the most recent sprint
+    public Optional<Sprint> getMostRecentSprint() {
+        List<Sprint> sprints = sprintRepository.findAll();
+        if (sprints.isEmpty()) {
+            return Optional.empty();
+        }
+        return sprints.stream()
+                .max((s1, s2) -> s1.getEndDate().compareTo(s2.getEndDate()));
+    }
+
     // Update an existing sprint
     public Sprint updateSprint(Long id, Sprint sprintDetails) throws Exception {
         Sprint sprint = sprintRepository.findById(id)

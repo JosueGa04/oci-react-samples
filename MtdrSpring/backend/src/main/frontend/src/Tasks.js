@@ -524,9 +524,9 @@ const Tasks = () => {
                       },
                     }}
                   >
-                    <MenuItem value="EPIC">Epic</MenuItem>
-                    <MenuItem value="STORY">Story</MenuItem>
-                    <MenuItem value="TASK">Task</MenuItem>
+                    <MenuItem value="Epic">Epic</MenuItem>
+                    <MenuItem value="Story">Story</MenuItem>
+                    <MenuItem value="Task">Task</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
